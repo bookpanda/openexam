@@ -13,15 +13,23 @@ pub struct ServiceResponse<T> {
 impl<T> ServiceResponse<T> {
     pub fn ok(data: T) -> Self {
         ServiceResponse {
-            status: 200,
+            status: StatusCode::OK.as_u16(),
             message: "OK".to_string(),
+            data: Some(data),
+        }
+    }
+
+    pub fn created(data: T) -> Self {
+        ServiceResponse {
+            status: StatusCode::CREATED.as_u16(),
+            message: "Created".to_string(),
             data: Some(data),
         }
     }
 
     pub fn not_found(msg: &str) -> Self {
         ServiceResponse {
-            status: 404,
+            status: StatusCode::NOT_FOUND.as_u16(),
             message: msg.to_string(),
             data: None,
         }
@@ -29,7 +37,7 @@ impl<T> ServiceResponse<T> {
 
     pub fn internal_error(msg: &str) -> Self {
         ServiceResponse {
-            status: 500,
+            status: StatusCode::INTERNAL_SERVER_ERROR.as_u16(),
             message: msg.to_string(),
             data: None,
         }

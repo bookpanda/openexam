@@ -22,7 +22,23 @@ impl UserService {
 
     pub async fn create(pool: &PgPool, name: String) -> ServiceResponse<User> {
         match UserRepo::create(pool, name).await {
-            Ok(user) => ServiceResponse::ok(user),
+            Ok(user) => ServiceResponse::created(user),
+            Err(_) => ServiceResponse::internal_error("Database error"),
+        }
+    }
+
+    pub async fn update(pool: &PgPool, id: i32, name: String) -> ServiceResponse<User> {
+        match UserRepo::update(pool, id, name).await {
+            Ok(Some(user)) => ServiceResponse::ok(user),
+            Ok(None) => ServiceResponse::not_found("User not found"),
+            Err(_) => ServiceResponse::internal_error("Database error"),
+        }
+    }
+
+    pub async fn delete(pool: &PgPool, id: i32) -> ServiceResponse<String> {
+        match UserRepo::delete(pool, id).await {
+            Ok(true) => ServiceResponse::ok("User deleted".to_string()),
+            Ok(false) => ServiceResponse::not_found("User not found"),
             Err(_) => ServiceResponse::internal_error("Database error"),
         }
     }

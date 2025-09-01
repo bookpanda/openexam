@@ -35,3 +35,20 @@ pub async fn create_user(
         .await
         .into_axum_response()
 }
+
+pub async fn update_user(
+    State(pool): State<PgPool>,
+    Path(id): Path<i32>,
+    Json(payload): Json<CreateUser>,
+) -> (StatusCode, Json<ServiceResponse<User>>) {
+    UserService::update(&pool, id, payload.name)
+        .await
+        .into_axum_response()
+}
+
+pub async fn delete_user(
+    State(pool): State<PgPool>,
+    Path(id): Path<i32>,
+) -> (StatusCode, Json<ServiceResponse<String>>) {
+    UserService::delete(&pool, id).await.into_axum_response()
+}

@@ -27,4 +27,23 @@ impl UserRepo {
                 .await?;
         Ok(user)
     }
+
+    pub async fn update(pool: &PgPool, id: i32, name: String) -> anyhow::Result<Option<User>> {
+        let updated_user = sqlx::query_as::<_, User>(
+            "UPDATE users SET name = $1 WHERE id = $2 RETURNING id, name",
+        )
+        .bind(name)
+        .bind(id)
+        .fetch_optional(pool)
+        .await?;
+        Ok(updated_user)
+    }
+
+    pub async fn delete(pool: &PgPool, id: i32) -> anyhow::Result<bool> {
+        let result = sqlx::query("DELETE FROM users WHERE id = $1")
+            .bind(id)
+            .execute(pool)
+            .await?;
+        Ok(result.rows_affected() > 0)
+    }
 }
