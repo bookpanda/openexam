@@ -4,10 +4,10 @@ use sqlx::PgPool;
 pub struct UserRepo;
 
 impl UserRepo {
-    pub async fn get_user(pool: &PgPool, id: i32) -> anyhow::Result<User> {
+    pub async fn get_user(pool: &PgPool, id: i32) -> anyhow::Result<Option<User>> {
         let user = sqlx::query_as::<_, User>("SELECT id, name FROM users WHERE id = $1")
             .bind(id)
-            .fetch_one(pool)
+            .fetch_optional(pool)
             .await?;
         Ok(user)
     }
