@@ -16,7 +16,7 @@ async fn main() {
 
     let pool: PgPool = db::connect().await;
 
-    let app = Router::new().nest("/api", user_routes(pool.clone()));
+    let app = Router::new().nest("/api", user_routes()).with_state(pool);
 
     let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
     println!("Server running on http://{}", addr);
