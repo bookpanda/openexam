@@ -1,5 +1,6 @@
 use axum::Router;
 use sqlx::PgPool;
+use std::net::SocketAddr;
 
 mod db;
 mod handlers;
@@ -14,9 +15,9 @@ async fn main() {
 
     let app = Router::new().nest("/api", routes::user::user_routes(pool.clone()));
 
-    println!("Server running on http://127.0.0.1:3000");
-    axum::Server::bind(&([127, 0, 0, 1], 3000).into())
-        .serve(app.into_make_service())
-        .await
-        .unwrap();
+    let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
+    println!("Server running on http://{}", addr);
+
+    let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
+    axum::serve(listener, app).await.unwrap();
 }
