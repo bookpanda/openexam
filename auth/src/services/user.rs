@@ -6,16 +6,22 @@ use sqlx::PgPool;
 pub struct UserService;
 
 impl UserService {
-    pub async fn get_user(pool: &PgPool, id: i32) -> ServiceResponse<User> {
-        match UserRepo::get_user(pool, id).await {
+    pub async fn get_all(pool: &PgPool) -> ServiceResponse<Vec<User>> {
+        match UserRepo::get_all(pool).await {
+            Ok(users) => ServiceResponse::ok(users),
+            Err(_) => ServiceResponse::internal_error("Database error"),
+        }
+    }
+    pub async fn get_one(pool: &PgPool, id: i32) -> ServiceResponse<User> {
+        match UserRepo::get_one(pool, id).await {
             Ok(Some(user)) => ServiceResponse::ok(user),
             Ok(None) => ServiceResponse::not_found("User not found"),
             Err(_) => ServiceResponse::internal_error("Database error"),
         }
     }
 
-    pub async fn create_user(pool: &PgPool, name: String) -> ServiceResponse<User> {
-        match UserRepo::create_user(pool, name).await {
+    pub async fn create(pool: &PgPool, name: String) -> ServiceResponse<User> {
+        match UserRepo::create(pool, name).await {
             Ok(user) => ServiceResponse::ok(user),
             Err(_) => ServiceResponse::internal_error("Database error"),
         }
