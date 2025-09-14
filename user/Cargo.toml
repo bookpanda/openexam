@@ -15,6 +15,7 @@ anyhow = "1.0.99"
 tonic = "0.12"
 prost = "0.13"
 oauth2 = "5.0.0"
+jsonwebtoken = "9.3.1"
 
 [build-dependencies]
 tonic-build = "0.12"
