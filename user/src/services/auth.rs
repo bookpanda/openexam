@@ -3,19 +3,19 @@ use tonic::{Request, Response, Status};
 use crate::proto::auth::{
     GetGoogleLoginUrlReply, GetGoogleLoginUrlRequest, LoginReply, LoginRequest,
 };
-use crate::repositories::user::UserRepo;
 use crate::services::oauth::OAuthService;
+use crate::services::user::UserService;
 
 #[derive(Debug)]
 pub struct AuthService {
-    pub user_repo: UserRepo,
+    user_service: UserService,
     oauth_service: OAuthService,
 }
 
 impl AuthService {
-    pub fn new(user_repo: UserRepo, oauth_service: OAuthService) -> anyhow::Result<Self> {
+    pub fn new(user_service: UserService, oauth_service: OAuthService) -> anyhow::Result<Self> {
         Ok(Self {
-            user_repo,
+            user_service,
             oauth_service,
         })
     }
@@ -39,13 +39,15 @@ impl AuthService {
             .oauth_service
             .get_access_token(code)
             .await
-            .map_err(|e| Status::internal(format!("Failed to exchange code: {}", e)))?;
+            .map_err(|e| Status::internal(format!("Failed to get access token: {}", e)))?;
 
         let user_info = self
             .oauth_service
             .get_profile(&access_token)
             .await
             .map_err(|e| Status::internal(format!("Failed to get profile: {}", e)))?;
+
+        let user = self.user_service.find_by_email(user_info.email).await?;
 
         Ok(Response::new(LoginReply {
             message: format!("Hello, {}!", user_info.name),
