@@ -1,9 +1,9 @@
 use oauth2::basic::BasicTokenType;
 use oauth2::{
-    AuthorizationCode, CsrfToken, EndpointNotSet, EndpointSet, ExtraTokenFields, Scope,
-    StandardTokenResponse, TokenResponse,
+    AsyncHttpClient, AuthorizationCode, CsrfToken, EndpointNotSet, EndpointSet, ExtraTokenFields,
+    Scope, StandardTokenResponse, TokenResponse,
 };
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use tonic::{Request, Response, Status};
 
 use crate::config::config::OAuthConfig;
@@ -13,13 +13,7 @@ use crate::proto::auth::{
 use crate::repositories::user::UserRepo;
 use jsonwebtoken::{DecodingKey, Validation, decode};
 use oauth2::{AuthUrl, ClientId, ClientSecret, RedirectUrl, TokenUrl, basic::BasicClient};
-
-#[derive(Debug, Deserialize)]
-struct GoogleExtraTokenFields {
-    id_token: String,
-}
-type GoogleTokenResponse = StandardTokenResponse<GoogleExtraTokenFields, BasicTokenType>;
-impl ExtraTokenFields for GoogleExtraTokenFields {}
+use reqwest;
 
 #[derive(Debug)]
 pub struct AuthService {
@@ -61,21 +55,22 @@ impl AuthService {
     async fn exchange_google_code(&self, code: String) -> Result<String, anyhow::Error> {
         let code = AuthorizationCode::new(code);
 
-        let token_response: GoogleTokenResponse = self
+        let http_client = reqwest::ClientBuilder::new()
+            .redirect(reqwest::redirect::Policy::none())
+            .build()
+            .expect("Client should build");
+
+        let token_response = self
             .oauth_client
             .exchange_code(code)
-            .request_async(oauth2::reqwest::async_http_client)
+            .request_async(&reqwest::Client::new())
             .await?;
 
         let access_token = token_response.access_token().secret().clone();
 
-        let id_token = token_response.extra_fields().id_token.clone();
+        let user_info = get_profile(&access_token).await?;
 
-        let token_data = decode::<GoogleClaims>(
-            &id_token,
-            &DecodingKey::from_secret("YOUR_GOOGLE_CLIENT_SECRET".as_ref()),
-            &Validation::default(),
-        )?;
+        println!("Decoded token: {:?}", user_info);
 
         Ok(access_token.to_string())
     }
@@ -84,8 +79,37 @@ impl AuthService {
         &self,
         request: Request<LoginRequest>,
     ) -> Result<Response<LoginReply>, Status> {
+        let code = request.into_inner().code;
+        let access_token = self
+            .exchange_google_code(code)
+            .await
+            .map_err(|e| Status::internal(format!("Failed to exchange code: {}", e)))?;
+
+        let user_info = get_profile(&access_token)
+            .await
+            .map_err(|e| Status::internal(format!("Failed to get profile: {}", e)))?;
+
         Ok(Response::new(LoginReply {
-            message: "Hello, world!".to_string(),
+            message: format!("Hello, {}!", user_info.name),
         }))
     }
+}
+
+#[derive(Debug, Deserialize)]
+pub struct UserInfo {
+    pub email: String,
+    pub name: String,
+    pub sub: String,
+}
+
+async fn get_profile(access_token: &str) -> Result<UserInfo, anyhow::Error> {
+    let client = reqwest::Client::new();
+    let response = client
+        .get("https://openidconnect.googleapis.com/v1/userinfo")
+        .bearer_auth(access_token.to_owned())
+        .send()
+        .await?;
+
+    let user_info = response.json::<UserInfo>().await?;
+    Ok(user_info)
 }
