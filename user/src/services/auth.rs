@@ -35,14 +35,10 @@ impl AuthService {
         request: Request<LoginRequest>,
     ) -> Result<Response<LoginReply>, Status> {
         let code = request.into_inner().code;
-        let access_token = self
-            .oauth_service
-            .get_access_token(code)
-            .await
-            .map_err(|e| Status::internal(format!("Failed to get access token: {}", e)))?;
-
+        let access_token = self.oauth_service.get_access_token(code).await?;
         let user_info = self.oauth_service.get_profile(&access_token).await?;
-        let user = self.user_service.find_by_email(user_info.email).await?;
+        dbg!(&user_info);
+        // let user = self.user_service.find_by_email(user_info.email).await?;
 
         Ok(Response::new(LoginReply {
             message: format!("Hello, {}!", user_info.name),

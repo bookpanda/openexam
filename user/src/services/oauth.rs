@@ -44,7 +44,7 @@ impl OAuthService {
         auth_url.to_string()
     }
 
-    pub async fn get_access_token(&self, code: String) -> Result<String, anyhow::Error> {
+    pub async fn get_access_token(&self, code: String) -> Result<String, Status> {
         let code = AuthorizationCode::new(code);
 
         let http_client = reqwest::ClientBuilder::new()
@@ -56,7 +56,8 @@ impl OAuthService {
             .oauth_client
             .exchange_code(code)
             .request_async(&reqwest::Client::new())
-            .await?;
+            .await
+            .map_err(|e| Status::internal(format!("Failed to get access token: {}", e)))?;
 
         let access_token = token_response.access_token().secret().clone();
 
