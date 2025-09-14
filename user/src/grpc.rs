@@ -1,5 +1,7 @@
 use crate::proto::auth::auth_server::{Auth, AuthServer};
-use crate::proto::auth::{LoginReply, LoginRequest, RegisterReply, RegisterRequest};
+use crate::proto::auth::{
+    GetGoogleLoginUrlReply, GetGoogleLoginUrlRequest, LoginReply, LoginRequest,
+};
 use crate::services::auth::AuthService;
 use tonic::{Request, Response, Status};
 
@@ -10,11 +12,11 @@ pub struct MyAuth {
 
 #[tonic::async_trait]
 impl Auth for MyAuth {
-    async fn register(
+    async fn get_google_login_url(
         &self,
-        request: Request<RegisterRequest>,
-    ) -> Result<Response<RegisterReply>, Status> {
-        self.auth_service.register(request).await
+        request: Request<GetGoogleLoginUrlRequest>,
+    ) -> Result<Response<GetGoogleLoginUrlReply>, Status> {
+        self.auth_service.get_google_login_url(request)
     }
 
     async fn login(&self, request: Request<LoginRequest>) -> Result<Response<LoginReply>, Status> {

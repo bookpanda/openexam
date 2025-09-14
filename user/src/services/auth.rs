@@ -1,8 +1,10 @@
-use oauth2::{EndpointNotSet, EndpointSet};
+use oauth2::{CsrfToken, EndpointNotSet, EndpointSet, Scope};
 use tonic::{Request, Response, Status};
 
 use crate::config::config::OAuthConfig;
-use crate::proto::auth::{LoginReply, LoginRequest, RegisterReply, RegisterRequest};
+use crate::proto::auth::{
+    GetGoogleLoginUrlReply, GetGoogleLoginUrlRequest, LoginReply, LoginRequest,
+};
 use crate::repositories::user::UserRepo;
 use oauth2::{AuthUrl, ClientId, ClientSecret, RedirectUrl, TokenUrl, basic::BasicClient};
 
@@ -27,20 +29,19 @@ impl AuthService {
         })
     }
 
-    pub async fn get_google_login_url(&self) -> Result<String, Status> {
-        let (auth_url, _) = self.oauth_client.authorize_url(
-            oauth2::AuthorizationCode::new(),
-            "http://localhost:8080/auth/google/callback",
-        );
-        Ok(auth_url.to_string())
-    }
-
-    pub async fn register(
+    pub fn get_google_login_url(
         &self,
-        request: Request<RegisterRequest>,
-    ) -> Result<Response<RegisterReply>, Status> {
-        Ok(Response::new(RegisterReply {
-            message: "Hello, world!".to_string(),
+        request: Request<GetGoogleLoginUrlRequest>,
+    ) -> Result<Response<GetGoogleLoginUrlReply>, Status> {
+        let (auth_url, _) = self
+            .oauth_client
+            .authorize_url(|| CsrfToken::new_random())
+            .add_scope(Scope::new("openid".into()))
+            .add_scope(Scope::new("email".into()))
+            .add_scope(Scope::new("profile".into()))
+            .url();
+        Ok(Response::new(GetGoogleLoginUrlReply {
+            url: auth_url.to_string(),
         }))
     }
 

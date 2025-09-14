@@ -3,18 +3,14 @@ syntax = "proto3";
 package auth;
 
 service Auth {
-  rpc Register (RegisterRequest) returns (RegisterReply);
+  rpc GetGoogleLoginUrl (GetGoogleLoginUrlRequest) returns (GetGoogleLoginUrlReply);
   rpc Login (LoginRequest) returns (LoginReply);
 }
 
-message RegisterRequest {
-  string name = 1;
-  string email = 2;
-  string password = 3;
-}
+message GetGoogleLoginUrlRequest { }
 
-message RegisterReply {
-  string message = 1;
+message GetGoogleLoginUrlReply {
+  string url = 1;
 }
 
 message LoginRequest {
