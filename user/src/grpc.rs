@@ -3,7 +3,7 @@ use crate::proto::auth::{LoginReply, LoginRequest, RegisterReply, RegisterReques
 use crate::services::auth::AuthService;
 use tonic::{Request, Response, Status};
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct MyAuth {
     pub auth_service: AuthService,
 }
@@ -22,6 +22,12 @@ impl Auth for MyAuth {
     }
 }
 
-pub fn auth_server() -> AuthServer<MyAuth> {
-    AuthServer::new(MyAuth::default())
+impl MyAuth {
+    pub fn new(auth_service: AuthService) -> Self {
+        Self { auth_service }
+    }
+}
+
+pub fn auth_server(auth_service: AuthService) -> AuthServer<MyAuth> {
+    AuthServer::new(MyAuth::new(auth_service))
 }
