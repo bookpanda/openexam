@@ -1,6 +1,7 @@
 use crate::models::user::User;
 use sqlx::PgPool;
 
+#[derive(Debug, Default)]
 pub struct UserRepo;
 
 impl UserRepo {
