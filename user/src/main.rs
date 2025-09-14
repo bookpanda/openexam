@@ -2,6 +2,7 @@ use crate::db::connect;
 use crate::grpc::auth_server;
 use crate::repositories::user::UserRepo;
 use crate::services::auth::AuthService;
+use crate::services::oauth::OAuthService;
 use std::net::SocketAddr;
 use tokio::task;
 use tonic::transport::Server;
@@ -25,7 +26,8 @@ async fn main() -> anyhow::Result<()> {
     let pool = connect(&config.database).await;
 
     let user_repo = UserRepo::default();
-    let auth_service = AuthService::new(user_repo, config.oauth)?;
+    let oauth_service = OAuthService::new(config.oauth)?;
+    let auth_service = AuthService::new(user_repo, oauth_service)?;
 
     let grpc_addr: SocketAddr = config.server.grpc_addr.parse()?;
     let grpc = Server::builder().add_service(auth_server(auth_service));
