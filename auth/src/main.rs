@@ -9,6 +9,8 @@ mod models;
 mod repositories;
 mod routes;
 mod services;
+mod proto;
+mod grpc;
 
 #[tokio::main]
 async fn main() {
