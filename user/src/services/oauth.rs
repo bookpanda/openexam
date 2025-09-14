@@ -3,6 +3,7 @@ use oauth2::{
     Scope, StandardTokenResponse, TokenResponse,
 };
 use serde::{Deserialize, Serialize};
+use tonic::Status;
 
 use crate::config::config::OAuthConfig;
 use oauth2::{AuthUrl, ClientId, ClientSecret, RedirectUrl, TokenUrl, basic::BasicClient};
@@ -62,15 +63,19 @@ impl OAuthService {
         Ok(access_token.to_string())
     }
 
-    pub async fn get_profile(&self, access_token: &str) -> Result<UserInfo, anyhow::Error> {
+    pub async fn get_profile(&self, access_token: &str) -> Result<UserInfo, Status> {
         let client = reqwest::Client::new();
         let response = client
             .get("https://openidconnect.googleapis.com/v1/userinfo")
             .bearer_auth(access_token.to_owned())
             .send()
-            .await?;
+            .await
+            .map_err(|e| Status::internal(format!("Failed to get profile: {}", e)))?;
 
-        let user_info = response.json::<UserInfo>().await?;
+        let user_info = response
+            .json::<UserInfo>()
+            .await
+            .map_err(|e| Status::internal(format!("Failed to get profile: {}", e)))?;
         Ok(user_info)
     }
 }

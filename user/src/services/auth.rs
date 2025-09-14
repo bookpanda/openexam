@@ -41,11 +41,7 @@ impl AuthService {
             .await
             .map_err(|e| Status::internal(format!("Failed to get access token: {}", e)))?;
 
-        let user_info = self
-            .oauth_service
-            .get_profile(&access_token)
-            .await
-            .map_err(|e| Status::internal(format!("Failed to get profile: {}", e)))?;
+        let user_info = self.oauth_service.get_profile(&access_token).await?;
 
         let user = self.user_service.find_by_email(user_info.email).await?;
 
