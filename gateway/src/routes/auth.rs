@@ -1,7 +1,6 @@
 use crate::handlers::user::UserHandler;
-use crate::proto::auth::LoginRequest;
 use axum::{
-    Json, Router,
+    Router,
     routing::{get, post},
 };
 

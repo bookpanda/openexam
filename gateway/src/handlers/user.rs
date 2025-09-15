@@ -19,7 +19,7 @@ impl UserHandler {
         Self { user_service }
     }
 
-    pub async fn get_google_login_url(&mut self) -> (StatusCode, Json<ServiceResponse<String>>) {
+    pub async fn get_google_login_url(&self) -> (StatusCode, Json<ServiceResponse<String>>) {
         self.user_service
             .get_google_login_url()
             .await
@@ -27,7 +27,7 @@ impl UserHandler {
     }
 
     pub async fn login(
-        &mut self,
+        &self,
         Json(request): Json<LoginRequestDto>,
     ) -> (StatusCode, Json<ServiceResponse<String>>) {
         self.user_service.login(request).await.into_axum_response()

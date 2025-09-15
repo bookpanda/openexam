@@ -4,6 +4,7 @@ use crate::routes::auth::auth_routes;
 use crate::services::user::UserService;
 use axum::Router;
 use std::net::SocketAddr;
+use std::sync::Arc;
 
 mod config;
 mod dtos;

@@ -13,19 +13,25 @@ pub struct UserService {
 
 impl UserService {
     pub fn new(user_client: AuthClient<Channel>) -> Self {
-        Self { user_client }
+        Self {
+            user_client: user_client,
+        }
     }
 
-    pub async fn get_google_login_url(&mut self) -> ServiceResponse<String> {
+    pub async fn get_google_login_url(&self) -> ServiceResponse<String> {
+        let mut client = self.user_client.clone();
         let request = GetGoogleLoginUrlRequest {};
-        match self.user_client.get_google_login_url(request).await {
+
+        match client.get_google_login_url(request).await {
             Ok(response) => ServiceResponse::ok(response.into_inner().url),
             Err(_) => ServiceResponse::internal_error("Database error"),
         }
     }
-    pub async fn login(&mut self, request: LoginRequestDto) -> ServiceResponse<String> {
+    pub async fn login(&self, request: LoginRequestDto) -> ServiceResponse<String> {
+        let mut client = self.user_client.clone();
         let request = LoginRequest { code: request.code };
-        match self.user_client.login(request).await {
+
+        match client.login(request).await {
             Ok(response) => ServiceResponse::ok(response.into_inner().message),
             Err(_) => ServiceResponse::internal_error("Database error"),
         }
