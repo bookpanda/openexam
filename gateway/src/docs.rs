@@ -23,7 +23,7 @@ use utoipa::{
     ),
     servers(
         (url = "http://localhost:{port}", description = "Local server", variables(
-            ("port" = (default= "3000", description = "port"))
+            ("port" = (default= "3001", description = "port"))
         )),
         (url = "https://openexam.bookpanda.dev", description = "production server")
     ),

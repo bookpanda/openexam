@@ -4,7 +4,7 @@
  */
 
 export interface paths {
-    "/user/google": {
+    "/api/user/google": {
         parameters: {
             query?: never;
             header?: never;
@@ -20,7 +20,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/user/google/callback": {
+    "/api/user/google/callback": {
         parameters: {
             query?: never;
             header?: never;
@@ -36,7 +36,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/user/validate-token": {
+    "/api/user/validate-token": {
         parameters: {
             query?: never;
             header?: never;

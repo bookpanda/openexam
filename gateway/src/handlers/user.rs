@@ -16,7 +16,7 @@ impl UserHandler {
 
 #[utoipa::path(
     get,
-    path = "/user/google",
+    path = "/api/user/google",
     tag = "User",
     responses(
         (status = 200, description = "Success", body = String),
@@ -33,7 +33,7 @@ pub async fn get_google_login_url(State(handler): State<UserHandler>) -> impl In
 
 #[utoipa::path(
     post,
-    path = "/user/google/callback",
+    path = "/api/user/google/callback",
     tag = "User",
     request_body = dtos::LoginRequestDto,
     responses(
@@ -54,7 +54,7 @@ pub async fn login(
 
 #[utoipa::path(
     post,
-    path = "/user/validate-token",
+    path = "/api/user/validate-token",
     tag = "User",
     request_body = dtos::ValidateTokenRequestDto,
     responses(
