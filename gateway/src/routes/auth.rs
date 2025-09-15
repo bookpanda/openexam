@@ -1,4 +1,4 @@
-use crate::handlers::user::{UserHandler, get_google_login_url, login};
+use crate::handlers::user::UserHandler;
 use axum::{
     Router,
     routing::{get, post},
@@ -6,6 +6,6 @@ use axum::{
 
 pub fn auth_routes() -> Router<UserHandler> {
     Router::new()
-        .route("/user/google", get(get_google_login_url))
-        .route("/user/google/callback", post(login))
+        .route("/user/google", get(UserHandler::get_google_login_url))
+        .route("/user/google/callback", post(UserHandler::login))
 }

@@ -1,3 +1,4 @@
+use std::sync::Arc;
 use tonic::transport::Channel;
 
 use crate::{
@@ -6,20 +7,20 @@ use crate::{
     services::response::ServiceResponse,
 };
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct UserService {
-    user_client: AuthClient<Channel>,
+    user_client: Arc<AuthClient<Channel>>,
 }
 
 impl UserService {
     pub fn new(user_client: AuthClient<Channel>) -> Self {
         Self {
-            user_client: user_client,
+            user_client: Arc::new(user_client),
         }
     }
 
     pub async fn get_google_login_url(&self) -> ServiceResponse<String> {
-        let mut client = self.user_client.clone();
+        let mut client = (*self.user_client).clone();
         let request = GetGoogleLoginUrlRequest {};
 
         match client.get_google_login_url(request).await {
@@ -28,7 +29,7 @@ impl UserService {
         }
     }
     pub async fn login(&self, request: LoginRequestDto) -> ServiceResponse<String> {
-        let mut client = self.user_client.clone();
+        let mut client = (*self.user_client).clone();
         let request = LoginRequest { code: request.code };
 
         match client.login(request).await {
