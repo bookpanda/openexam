@@ -12,7 +12,9 @@ tokio = { version = "1", features = ["full"] }
 dotenvy = "0.15.7"
 anyhow = "1.0.99"
 tonic = "0.12"
-prost = "0.13"
+prost = "0.12"
+tonic-prost = "0.12"
 
 [build-dependencies]
 tonic-build = "0.12"
+
