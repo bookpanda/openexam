@@ -1,3 +1,4 @@
+use log::{error, info};
 use std::sync::Arc;
 use tonic::transport::Channel;
 
@@ -25,7 +26,10 @@ impl UserService {
 
         match client.get_google_login_url(request).await {
             Ok(response) => ServiceResponse::ok(response.into_inner().url),
-            Err(_) => ServiceResponse::internal_error("Database error"),
+            Err(e) => {
+                error!("Get google login url error: {:?}", e);
+                ServiceResponse::internal_error(&format!("Get google login url error: {:?}", e))
+            }
         }
     }
     pub async fn login(&self, request: LoginRequestDto) -> ServiceResponse<String> {
@@ -34,7 +38,10 @@ impl UserService {
 
         match client.login(request).await {
             Ok(response) => ServiceResponse::ok(response.into_inner().message),
-            Err(_) => ServiceResponse::internal_error("Database error"),
+            Err(e) => {
+                error!("Login error: {:?}", e);
+                ServiceResponse::internal_error(&format!("Login error: {:?}", e))
+            }
         }
     }
 }

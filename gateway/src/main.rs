@@ -24,10 +24,9 @@ async fn main() -> anyhow::Result<()> {
     let app = Router::new().nest("/api", auth_routes().with_state(user_handler));
 
     let addr = SocketAddr::from(([127, 0, 0, 1], config.server.gateway_port));
+    println!("Server running on http://{}", addr);
     let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
     axum::serve(listener, app).await.unwrap();
-
-    println!("Server running on http://{}", addr);
 
     Ok(())
 }

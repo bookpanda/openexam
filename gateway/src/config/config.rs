@@ -26,7 +26,7 @@ impl ServerConfig {
                 .unwrap_or_else(|_| "3000".to_string())
                 .parse()?,
             user_grpc_url: env::var("USER_GRPC_URL")
-                .unwrap_or_else(|_| "127.0.0.1:50051".to_string()),
+                .unwrap_or_else(|_| "http://127.0.0.1:50051".to_string()),
         })
     }
 }
