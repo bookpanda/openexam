@@ -35,10 +35,23 @@ impl AuthService {
         request: Request<LoginRequest>,
     ) -> Result<Response<LoginReply>, Status> {
         let code = request.into_inner().code;
-        let access_token = self.oauth_service.get_access_token(code).await?;
-        let user_info = self.oauth_service.get_profile(&access_token).await?;
-        dbg!(&user_info);
-        // let user = self.user_service.find_by_email(user_info.email).await?;
+        let access_token = self
+            .oauth_service
+            .get_access_token(code)
+            .await
+            .map_err(|e| Status::internal(format!("Failed to exchange code: {}", e)))?;
+
+        let user_info = self
+            .oauth_service
+            .get_profile(&access_token)
+            .await
+            .map_err(|e| Status::internal(format!("Failed to get profile: {}", e)))?;
+
+        let user = self
+            .user_service
+            .find_by_email(&user_info.email)
+            .await
+            .map_err(|e| Status::internal(format!("Failed to create user: {}", e)))?;
 
         Ok(Response::new(LoginReply {
             message: format!("Hello, {}!", user_info.name),

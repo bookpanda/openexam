@@ -1,14 +1,10 @@
-use dotenvy::dotenv;
+use crate::config::config::DatabaseConfig;
 use sqlx::{PgPool, postgres::PgPoolOptions};
-use std::env;
 
-pub async fn connect() -> PgPool {
-    dotenv().ok();
-    let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
-
+pub async fn connect(config: &DatabaseConfig) -> PgPool {
     let pool = PgPoolOptions::new()
-        .max_connections(5)
-        .connect(&database_url)
+        .max_connections(config.max_connections)
+        .connect(&config.url)
         .await
         .expect("Failed to connect to Postgres");
 
