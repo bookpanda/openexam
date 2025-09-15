@@ -4,8 +4,10 @@ use crate::routes::auth::auth_routes;
 use crate::services::user::UserService;
 use axum::Router;
 use std::net::SocketAddr;
+use utoipa_swagger_ui::SwaggerUi;
 
 mod config;
+mod docs;
 mod dtos;
 mod handlers;
 mod proto;
@@ -22,7 +24,11 @@ async fn main() -> anyhow::Result<()> {
     let user_service = UserService::new(user_client);
     let user_handler = UserHandler::new(user_service);
 
-    let app = Router::new().nest("/api", auth_routes().with_state(user_handler));
+    let mut app = Router::new().nest("/api", auth_routes().with_state(user_handler));
+
+    if config.app.debug {
+        app = app.merge(SwaggerUi::new("/swagger").url("/api-docs/openapi.json", docs::get_doc()));
+    }
 
     let addr = SocketAddr::from(([127, 0, 0, 1], config.server.gateway_port));
     println!("Server running on http://{}", addr);

@@ -2,7 +2,13 @@ use std::env;
 
 #[derive(Debug, Clone)]
 pub struct Config {
+    pub app: AppConfig,
     pub server: ServerConfig,
+}
+
+#[derive(Debug, Clone)]
+pub struct AppConfig {
+    pub debug: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -14,7 +20,18 @@ pub struct ServerConfig {
 impl Config {
     pub fn from_env() -> anyhow::Result<Self> {
         Ok(Self {
+            app: AppConfig::from_env()?,
             server: ServerConfig::from_env()?,
+        })
+    }
+}
+
+impl AppConfig {
+    fn from_env() -> anyhow::Result<Self> {
+        Ok(Self {
+            debug: env::var("DEBUG")
+                .unwrap_or_else(|_| "false".to_string())
+                .parse()?,
         })
     }
 }

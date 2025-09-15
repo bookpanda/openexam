@@ -1,4 +1,4 @@
-use crate::dtos::user::LoginRequestDto;
+use crate::dtos;
 use crate::services::user::UserService;
 use axum::extract::State;
 use axum::{Json, response::IntoResponse};
@@ -12,23 +12,64 @@ impl UserHandler {
     pub fn new(user_service: UserService) -> Self {
         Self { user_service }
     }
+}
 
-    pub async fn get_google_login_url(State(handler): State<UserHandler>) -> impl IntoResponse {
-        handler
-            .user_service
-            .get_google_login_url()
-            .await
-            .into_axum_response()
-    }
+#[utoipa::path(
+    get,
+    path = "/user/google",
+    tag = "User",
+    responses(
+        (status = 200, description = "Success", body = String),
+        (status = 500, description = "Internal server error"),
+    ),
+)]
+pub async fn get_google_login_url(State(handler): State<UserHandler>) -> impl IntoResponse {
+    handler
+        .user_service
+        .get_google_login_url()
+        .await
+        .into_axum_response()
+}
 
-    pub async fn login(
-        State(handler): State<UserHandler>,
-        Json(request): Json<LoginRequestDto>,
-    ) -> impl IntoResponse {
-        handler
-            .user_service
-            .login(request)
-            .await
-            .into_axum_response()
-    }
+#[utoipa::path(
+    post,
+    path = "/user/google/callback",
+    tag = "User",
+    request_body = dtos::LoginRequestDto,
+    responses(
+        (status = 200, description = "Success", body = dtos::LoginResponseDto),
+        (status = 500, description = "Internal server error"),
+    ),
+)]
+pub async fn login(
+    State(handler): State<UserHandler>,
+    Json(request): Json<dtos::LoginRequestDto>,
+) -> impl IntoResponse {
+    handler
+        .user_service
+        .login(request)
+        .await
+        .into_axum_response()
+}
+
+#[utoipa::path(
+    post,
+    path = "/user/validate-token",
+    tag = "User",
+    request_body = dtos::ValidateTokenRequestDto,
+    responses(
+        (status = 200, description = "Success", body = dtos::ValidateTokenResponseDto),
+        (status = 401, description = "Unauthorized"),
+        (status = 500, description = "Internal server error"),
+    ),
+)]
+pub async fn validate_token(
+    State(handler): State<UserHandler>,
+    Json(request): Json<dtos::ValidateTokenRequestDto>,
+) -> impl IntoResponse {
+    handler
+        .user_service
+        .validate_token(request)
+        .await
+        .into_axum_response()
 }

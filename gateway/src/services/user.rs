@@ -2,8 +2,9 @@ use log::error;
 use std::sync::Arc;
 use tonic::transport::Channel;
 
+use crate::dtos;
+use crate::proto::user::ValidateTokenRequest;
 use crate::{
-    dtos::user::{LoginRequestDto, LoginResponseDto},
     proto::user::{GetGoogleLoginUrlRequest, LoginRequest, user_client::UserClient},
     services::response::ServiceResponse,
 };
@@ -32,14 +33,17 @@ impl UserService {
             }
         }
     }
-    pub async fn login(&self, request: LoginRequestDto) -> ServiceResponse<LoginResponseDto> {
+    pub async fn login(
+        &self,
+        request: dtos::LoginRequestDto,
+    ) -> ServiceResponse<dtos::LoginResponseDto> {
         let mut client = (*self.user_client).clone();
         let request = LoginRequest { code: request.code };
 
         match client.login(request).await {
             Ok(response) => {
                 let response = response.into_inner();
-                ServiceResponse::ok(LoginResponseDto {
+                ServiceResponse::ok(dtos::LoginResponseDto {
                     id: response.id,
                     email: response.email,
                     name: response.name,
@@ -49,6 +53,31 @@ impl UserService {
             Err(e) => {
                 error!("Login error: {:?}", e);
                 ServiceResponse::internal_error(&format!("Login error: {:?}", e))
+            }
+        }
+    }
+
+    pub async fn validate_token(
+        &self,
+        request: dtos::ValidateTokenRequestDto,
+    ) -> ServiceResponse<dtos::ValidateTokenResponseDto> {
+        let mut client = (*self.user_client).clone();
+        let request = ValidateTokenRequest {
+            token: request.token,
+        };
+
+        match client.validate_token(request).await {
+            Ok(response) => {
+                let response = response.into_inner();
+                ServiceResponse::ok(dtos::ValidateTokenResponseDto {
+                    id: response.id,
+                    email: response.email,
+                    name: response.name,
+                })
+            }
+            Err(e) => {
+                error!("Validate token error: {:?}", e);
+                ServiceResponse::internal_error(&format!("Validate token error: {:?}", e))
             }
         }
     }
