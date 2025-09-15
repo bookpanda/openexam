@@ -19,7 +19,7 @@ const middleware: Middleware = {
 }
 
 const client = createClient<paths>({
-  baseUrl: process.env.BACKEND_URL,
+  baseUrl: process.env.BACKEND_URL || "http://localhost:3001",
   fetch: (url, init = {}) => {
     return fetch(url, {
       ...init,
