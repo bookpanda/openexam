@@ -1,10 +1,8 @@
-use crate::grpc::auth_server;
+use crate::handlers::user::UserHandler;
+use crate::proto::auth::auth_client::AuthClient;
 use crate::routes::auth::auth_routes;
-use crate::services::auth::AuthService;
 use axum::Router;
 use std::net::SocketAddr;
-use tokio::task;
-use tonic::transport::Server;
 
 mod config;
 mod handlers;
@@ -17,23 +15,16 @@ async fn main() -> anyhow::Result<()> {
     dotenvy::dotenv().ok();
     let config = config::config::Config::from_env()?;
 
-    let auth_service = AuthService::new(user_repo, config.oauth)?;
+    let mut user_client = AuthClient::connect(config.server.user_grpc_url).await?;
+    let user_handler = UserHandler::new(user_client);
 
-    let app = Router::new().nest("/api", auth_routes());
+    let app = Router::new().nest("/api", auth_routes(user_handler));
 
-    let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
+    let addr = SocketAddr::from(([127, 0, 0, 1], config.server.gateway_port));
     let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
     axum::serve(listener, app).await.unwrap();
 
-    let grpc_addr: SocketAddr = config.server.grpc_addr.parse()?;
-    let grpc = Server::builder().add_service(auth_server(auth_service));
+    println!("Server running on http://{}", addr);
 
-    println!("Server running on http://{}", grpc_addr);
-
-    let grpc_task = task::spawn(async move {
-        grpc.serve(grpc_addr).await.unwrap();
-    });
-
-    tokio::try_join!(grpc_task)?;
     Ok(())
 }
