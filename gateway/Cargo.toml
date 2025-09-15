@@ -4,3 +4,23 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+axum = "0.8.4"
+hyper = { version = "1.0", features = ["full"] }
+serde = { version = "1.0.219", features = ["derive"] }
+serde_json = "1.0"
+tokio = { version = "1", features = ["full"] }
+dotenvy = "0.15.7"
+anyhow = "1.0.99"
+tonic = "0.14.1"
+prost = "0.14.1"
+tonic-prost = "0.14.1"
+log = "0.4"
+env_logger = "0.11.8"
+utoipa = "5.4.0"
+utoipa-swagger-ui = { version = "9.0.2", features = ["axum"] }
+tower = "0.5.2"
+tower-http = { version = "0.6.6", features = ["cors"] }
+
+[build-dependencies]
+tonic-prost-build = "0.14.1"
+

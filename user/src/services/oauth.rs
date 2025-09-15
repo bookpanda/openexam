@@ -1,8 +1,5 @@
-use oauth2::{
-    AsyncHttpClient, AuthorizationCode, CsrfToken, EndpointNotSet, EndpointSet, ExtraTokenFields,
-    Scope, StandardTokenResponse, TokenResponse,
-};
-use serde::{Deserialize, Serialize};
+use oauth2::{AuthorizationCode, CsrfToken, EndpointNotSet, EndpointSet, Scope, TokenResponse};
+use serde::Deserialize;
 use tonic::Status;
 
 use crate::config::config::OAuthConfig;
@@ -13,7 +10,6 @@ use reqwest;
 pub struct UserInfo {
     pub email: String,
     pub name: String,
-    pub sub: String,
 }
 
 #[derive(Debug)]
@@ -44,13 +40,8 @@ impl OAuthService {
         auth_url.to_string()
     }
 
-    pub async fn get_access_token(&self, code: String) -> Result<String, Status> {
-        let code = AuthorizationCode::new(code);
-
-        let http_client = reqwest::ClientBuilder::new()
-            .redirect(reqwest::redirect::Policy::none())
-            .build()
-            .expect("Client should build");
+    pub async fn get_access_token(&self, code: &str) -> Result<String, Status> {
+        let code = AuthorizationCode::new(code.to_string());
 
         let token_response = self
             .oauth_client
@@ -71,7 +62,7 @@ impl OAuthService {
             .bearer_auth(access_token.to_owned())
             .send()
             .await
-            .map_err(|e| Status::internal(format!("Failed to get profile: {}", e)))?;
+            .map_err(|e| Status::unauthenticated(format!("Unauthenticated: {}", e)))?;
 
         let user_info = response
             .json::<UserInfo>()

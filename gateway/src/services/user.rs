@@ -1,59 +1,84 @@
-use crate::models::user::User;
-use crate::repositories::user::UserRepo;
-use crate::services::response::ServiceResponse;
+use log::error;
+use std::sync::Arc;
+use tonic::transport::Channel;
 
-#[derive(Debug)]
+use crate::dtos;
+use crate::proto::user::ValidateTokenRequest;
+use crate::{
+    proto::user::{GetGoogleLoginUrlRequest, LoginRequest, user_client::UserClient},
+    services::response::ApiResponse,
+};
+
+#[derive(Debug, Clone)]
 pub struct UserService {
-    user_repo: UserRepo,
+    user_client: Arc<UserClient<Channel>>,
 }
 
 impl UserService {
-    pub fn new(user_repo: UserRepo) -> Self {
-        Self { user_repo }
-    }
-
-    pub async fn get_all(&self) -> ServiceResponse<Vec<User>> {
-        match self.user_repo.get_all().await {
-            Ok(users) => ServiceResponse::ok(users),
-            Err(_) => ServiceResponse::internal_error("Database error"),
-        }
-    }
-    pub async fn get_one(&self, id: i32) -> ServiceResponse<User> {
-        match self.user_repo.get_one(id).await {
-            Ok(Some(user)) => ServiceResponse::ok(user),
-            Ok(None) => ServiceResponse::not_found("User not found"),
-            Err(_) => ServiceResponse::internal_error("Database error"),
+    pub fn new(user_client: UserClient<Channel>) -> Self {
+        Self {
+            user_client: Arc::new(user_client),
         }
     }
 
-    pub async fn find_by_email(&self, email: String) -> ServiceResponse<User> {
-        match self.user_repo.find_by_email(email).await {
-            Ok(Some(user)) => ServiceResponse::ok(user),
-            Ok(None) => ServiceResponse::not_found("User not found"),
-            Err(_) => ServiceResponse::internal_error("Database error"),
+    pub async fn get_google_login_url(&self) -> ApiResponse<String> {
+        let mut client = (*self.user_client).clone();
+        let request = GetGoogleLoginUrlRequest {};
+
+        match client.get_google_login_url(request).await {
+            Ok(response) => ApiResponse::ok(response.into_inner().url),
+            Err(e) => {
+                error!("Get google login url error: {:?}", e);
+                ApiResponse::internal_error(&format!("Get google login url error: {:?}", e))
+            }
+        }
+    }
+    pub async fn login(
+        &self,
+        request: dtos::LoginRequestDto,
+    ) -> ApiResponse<dtos::LoginResponseDto> {
+        let mut client = (*self.user_client).clone();
+        let request = LoginRequest { code: request.code };
+
+        match client.login(request).await {
+            Ok(response) => {
+                let response = response.into_inner();
+                ApiResponse::ok(dtos::LoginResponseDto {
+                    id: response.id,
+                    email: response.email,
+                    name: response.name,
+                    token: response.token,
+                })
+            }
+            Err(e) => {
+                error!("Login error: {:?}", e);
+                ApiResponse::internal_error(&format!("Login error: {:?}", e))
+            }
         }
     }
 
-    pub async fn create(&self, name: String) -> ServiceResponse<User> {
-        match self.user_repo.create(name).await {
-            Ok(user) => ServiceResponse::created(user),
-            Err(_) => ServiceResponse::internal_error("Database error"),
-        }
-    }
+    pub async fn validate_token(
+        &self,
+        request: dtos::ValidateTokenRequestDto,
+    ) -> ApiResponse<dtos::ValidateTokenResponseDto> {
+        let mut client = (*self.user_client).clone();
+        let request = ValidateTokenRequest {
+            token: request.token,
+        };
 
-    pub async fn update(&self, id: i32, name: String) -> ServiceResponse<User> {
-        match self.user_repo.update(id, name).await {
-            Ok(Some(user)) => ServiceResponse::ok(user),
-            Ok(None) => ServiceResponse::not_found("User not found"),
-            Err(_) => ServiceResponse::internal_error("Database error"),
-        }
-    }
-
-    pub async fn delete(&self, id: i32) -> ServiceResponse<String> {
-        match self.user_repo.delete(id).await {
-            Ok(true) => ServiceResponse::ok("User deleted".to_string()),
-            Ok(false) => ServiceResponse::not_found("User not found"),
-            Err(_) => ServiceResponse::internal_error("Database error"),
+        match client.validate_token(request).await {
+            Ok(response) => {
+                let response = response.into_inner();
+                ApiResponse::ok(dtos::ValidateTokenResponseDto {
+                    id: response.id,
+                    email: response.email,
+                    name: response.name,
+                })
+            }
+            Err(e) => {
+                error!("Validate token error: {:?}", e);
+                ApiResponse::internal_error(&format!("Validate token error: {:?}", e))
+            }
         }
     }
 }
