@@ -12,14 +12,14 @@ impl UserRepo {
     }
 
     pub async fn get_all(&self) -> anyhow::Result<Vec<User>> {
-        let users = sqlx::query_as::<_, User>("SELECT id, name FROM users")
+        let users = sqlx::query_as::<_, User>("SELECT id, email, name FROM users")
             .fetch_all(&self.pool)
             .await?;
         Ok(users)
     }
 
     pub async fn get_one(&self, id: i32) -> anyhow::Result<Option<User>> {
-        let user = sqlx::query_as::<_, User>("SELECT id, name FROM users WHERE id = $1")
+        let user = sqlx::query_as::<_, User>("SELECT id, email, name FROM users WHERE id = $1")
             .bind(id)
             .fetch_optional(&self.pool)
             .await?;
@@ -27,7 +27,7 @@ impl UserRepo {
     }
 
     pub async fn find_by_email(&self, email: &str) -> anyhow::Result<Option<User>> {
-        let user = sqlx::query_as::<_, User>("SELECT id, name FROM users WHERE email = $1")
+        let user = sqlx::query_as::<_, User>("SELECT id, email, name FROM users WHERE email = $1")
             .bind(email)
             .fetch_optional(&self.pool)
             .await?;

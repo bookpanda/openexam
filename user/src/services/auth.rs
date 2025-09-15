@@ -40,7 +40,6 @@ impl AuthService {
         let code = request.into_inner().code;
         let access_token = self.oauth_service.get_access_token(&code).await?;
         let user_info = self.oauth_service.get_profile(&access_token).await?;
-        dbg!(&user_info);
 
         let user = match self.user_service.find_by_email(&user_info.email).await {
             Ok(Some(user)) => user,
