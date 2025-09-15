@@ -2,7 +2,8 @@ use tonic::{Request, Response, Status};
 
 use crate::models::user::User;
 use crate::proto::user::{
-    GetGoogleLoginUrlReply, GetGoogleLoginUrlRequest, LoginReply, LoginRequest,
+    GetGoogleLoginUrlReply, GetGoogleLoginUrlRequest, LoginReply, LoginRequest, ValidateTokenReply,
+    ValidateTokenRequest,
 };
 use crate::services::oauth::OAuthService;
 use crate::services::user::UserService;
@@ -37,7 +38,7 @@ impl AuthService {
         request: Request<LoginRequest>,
     ) -> Result<Response<LoginReply>, Status> {
         let code = request.into_inner().code;
-        let access_token = self.oauth_service.get_access_token(code).await?;
+        let access_token = self.oauth_service.get_access_token(&code).await?;
         let user_info = self.oauth_service.get_profile(&access_token).await?;
         dbg!(&user_info);
 
@@ -62,6 +63,39 @@ impl AuthService {
             email: user.email,
             name: user.name,
             token: access_token,
+        }))
+    }
+
+    pub async fn validate_token(
+        &self,
+        request: Request<ValidateTokenRequest>,
+    ) -> Result<Response<ValidateTokenReply>, Status> {
+        let token = request.into_inner().token;
+        let user = self.oauth_service.get_profile(&token).await?;
+
+        let existing_user = match self.user_service.find_by_email(&user.email).await {
+            Ok(Some(user)) => user,
+            Ok(None) => {
+                return Err(Status::not_found("User not found"));
+            }
+            Err(e) => {
+                error!("Failed to find user by email: {:?}", e);
+                return Err(Status::internal("Failed to find user by email"));
+            }
+        };
+
+        if existing_user.email != user.email {
+            error!(
+                "Invalid token: expected email {} but got {}",
+                existing_user.email, user.email
+            );
+            return Err(Status::unauthenticated("Invalid token"));
+        }
+
+        Ok(Response::new(ValidateTokenReply {
+            id: existing_user.id.to_string(),
+            email: existing_user.email,
+            name: existing_user.name,
         }))
     }
 }

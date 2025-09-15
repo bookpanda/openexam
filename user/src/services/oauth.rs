@@ -40,8 +40,8 @@ impl OAuthService {
         auth_url.to_string()
     }
 
-    pub async fn get_access_token(&self, code: String) -> Result<String, Status> {
-        let code = AuthorizationCode::new(code);
+    pub async fn get_access_token(&self, code: &str) -> Result<String, Status> {
+        let code = AuthorizationCode::new(code.to_string());
 
         let token_response = self
             .oauth_client
@@ -62,7 +62,7 @@ impl OAuthService {
             .bearer_auth(access_token.to_owned())
             .send()
             .await
-            .map_err(|e| Status::internal(format!("Failed to get profile: {}", e)))?;
+            .map_err(|e| Status::unauthenticated(format!("Unauthenticated: {}", e)))?;
 
         let user_info = response
             .json::<UserInfo>()

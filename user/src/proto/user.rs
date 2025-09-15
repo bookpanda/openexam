@@ -22,6 +22,20 @@ pub struct LoginReply {
     #[prost(string, tag = "4")]
     pub token: ::prost::alloc::string::String,
 }
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ValidateTokenRequest {
+    #[prost(string, tag = "1")]
+    pub token: ::prost::alloc::string::String,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ValidateTokenReply {
+    #[prost(string, tag = "1")]
+    pub id: ::prost::alloc::string::String,
+    #[prost(string, tag = "2")]
+    pub email: ::prost::alloc::string::String,
+    #[prost(string, tag = "3")]
+    pub name: ::prost::alloc::string::String,
+}
 /// Generated client implementations.
 pub mod user_client {
     #![allow(
@@ -155,6 +169,27 @@ pub mod user_client {
             req.extensions_mut().insert(GrpcMethod::new("user.User", "Login"));
             self.inner.unary(req, path, codec).await
         }
+        pub async fn validate_token(
+            &mut self,
+            request: impl tonic::IntoRequest<super::ValidateTokenRequest>,
+        ) -> std::result::Result<
+            tonic::Response<super::ValidateTokenReply>,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::unknown(
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static("/user.User/ValidateToken");
+            let mut req = request.into_request();
+            req.extensions_mut().insert(GrpcMethod::new("user.User", "ValidateToken"));
+            self.inner.unary(req, path, codec).await
+        }
     }
 }
 /// Generated server implementations.
@@ -181,6 +216,13 @@ pub mod user_server {
             &self,
             request: tonic::Request<super::LoginRequest>,
         ) -> std::result::Result<tonic::Response<super::LoginReply>, tonic::Status>;
+        async fn validate_token(
+            &self,
+            request: tonic::Request<super::ValidateTokenRequest>,
+        ) -> std::result::Result<
+            tonic::Response<super::ValidateTokenReply>,
+            tonic::Status,
+        >;
     }
     #[derive(Debug)]
     pub struct UserServer<T> {
@@ -331,6 +373,51 @@ pub mod user_server {
                     let inner = self.inner.clone();
                     let fut = async move {
                         let method = LoginSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/user.User/ValidateToken" => {
+                    #[allow(non_camel_case_types)]
+                    struct ValidateTokenSvc<T: User>(pub Arc<T>);
+                    impl<
+                        T: User,
+                    > tonic::server::UnaryService<super::ValidateTokenRequest>
+                    for ValidateTokenSvc<T> {
+                        type Response = super::ValidateTokenReply;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::ValidateTokenRequest>,
+                        ) -> Self::Future {
+                            let inner = Arc::clone(&self.0);
+                            let fut = async move {
+                                <T as User>::validate_token(&inner, request).await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let method = ValidateTokenSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(

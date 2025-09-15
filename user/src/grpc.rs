@@ -1,6 +1,7 @@
 use crate::proto::user::user_server::{User, UserServer};
 use crate::proto::user::{
-    GetGoogleLoginUrlReply, GetGoogleLoginUrlRequest, LoginReply, LoginRequest,
+    GetGoogleLoginUrlReply, GetGoogleLoginUrlRequest, LoginReply, LoginRequest, ValidateTokenReply,
+    ValidateTokenRequest,
 };
 use crate::services::auth::AuthService;
 use tonic::{Request, Response, Status};
@@ -21,6 +22,13 @@ impl User for MyUser {
 
     async fn login(&self, request: Request<LoginRequest>) -> Result<Response<LoginReply>, Status> {
         self.auth_service.login(request).await
+    }
+
+    async fn validate_token(
+        &self,
+        request: Request<ValidateTokenRequest>,
+    ) -> Result<Response<ValidateTokenReply>, Status> {
+        self.auth_service.validate_token(request).await
     }
 }
 

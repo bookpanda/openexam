@@ -5,6 +5,7 @@ package user;
 service User {
   rpc GetGoogleLoginUrl (GetGoogleLoginUrlRequest) returns (GetGoogleLoginUrlReply);
   rpc Login (LoginRequest) returns (LoginReply);
+  rpc ValidateToken (ValidateTokenRequest) returns (ValidateTokenReply);
 }
 
 message GetGoogleLoginUrlRequest { }
@@ -22,4 +23,14 @@ message LoginReply {
   string email = 2;
   string name = 3;
   string token = 4;
+}
+
+message ValidateTokenRequest {
+  string token = 1;
+}
+
+message ValidateTokenReply {
+  string id = 1;
+  string email = 2;
+  string name = 3;
 }
