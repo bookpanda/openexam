@@ -6,6 +6,7 @@ use axum::Router;
 use std::net::SocketAddr;
 
 mod config;
+mod dtos;
 mod handlers;
 mod proto;
 mod routes;

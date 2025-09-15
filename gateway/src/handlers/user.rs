@@ -1,11 +1,8 @@
-use crate::proto::auth::{GetGoogleLoginUrlRequest, LoginRequest, auth_client::AuthClient};
+use crate::dtos::user::LoginRequestDto;
+use crate::services::response::ServiceResponse;
 use crate::services::user::UserService;
-use axum::extract::State;
-use axum::{Json, extract::Path};
+use axum::Json;
 use hyper::StatusCode;
-use std::sync::Arc;
-use tokio::sync::Mutex;
-use tonic::transport::Channel;
 
 #[derive(serde::Deserialize)]
 pub struct CreateUser {
@@ -22,17 +19,17 @@ impl UserHandler {
         Self { user_service }
     }
 
-    pub async fn get_google_login_url(&self) -> (StatusCode, Json<String>) {
+    pub async fn get_google_login_url(&mut self) -> (StatusCode, Json<ServiceResponse<String>>) {
         self.user_service
             .get_google_login_url()
             .await
-            .into_axum_response();
+            .into_axum_response()
     }
 
-    pub async fn login(&self, request: LoginRequest) -> (StatusCode, Json<String>) {
-        let request = LoginRequest { code: request.code };
-        let mut client = self.user_service.login(request).await?;
-        let response = client.login(request).await;
-        (StatusCode::OK, Json(response.into_inner().message))
+    pub async fn login(
+        &mut self,
+        Json(request): Json<LoginRequestDto>,
+    ) -> (StatusCode, Json<ServiceResponse<String>>) {
+        self.user_service.login(request).await.into_axum_response()
     }
 }

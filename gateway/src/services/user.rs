@@ -1,6 +1,7 @@
 use tonic::transport::Channel;
 
 use crate::{
+    dtos::user::LoginRequestDto,
     proto::auth::{GetGoogleLoginUrlRequest, LoginRequest, auth_client::AuthClient},
     services::response::ServiceResponse,
 };
@@ -22,7 +23,8 @@ impl UserService {
             Err(_) => ServiceResponse::internal_error("Database error"),
         }
     }
-    pub async fn login(&mut self, request: LoginRequest) -> ServiceResponse<String> {
+    pub async fn login(&mut self, request: LoginRequestDto) -> ServiceResponse<String> {
+        let request = LoginRequest { code: request.code };
         match self.user_client.login(request).await {
             Ok(response) => ServiceResponse::ok(response.into_inner().message),
             Err(_) => ServiceResponse::internal_error("Database error"),
