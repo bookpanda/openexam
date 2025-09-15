@@ -1,13 +1,29 @@
+use crate::proto::auth::{GetGoogleLoginUrlRequest, auth_client::AuthClient};
 use crate::services::user::UserService;
-use crate::{models::user::User, services::response::ServiceResponse};
 use axum::extract::State;
 use axum::{Json, extract::Path};
 use hyper::StatusCode;
-use sqlx::PgPool;
 
 #[derive(serde::Deserialize)]
 pub struct CreateUser {
     pub name: String,
+}
+
+#[derive(Debug)]
+pub struct AuthHandler {
+    auth_client: AuthClient,
+}
+
+impl AuthHandler {
+    pub fn new(auth_client: AuthClient) -> Self {
+        Self { auth_client }
+    }
+
+    pub async fn get_google_login_url(&self) -> anyhow::Result<String> {
+        let request = GetGoogleLoginUrlRequest {};
+        let response = self.auth_client.(request).await?;
+        Ok(response.url)
+    }
 }
 
 pub async fn get_all_users(

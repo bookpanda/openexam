@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package auth;
+
+service Auth {
+  rpc GetGoogleLoginUrl (GetGoogleLoginUrlRequest) returns (GetGoogleLoginUrlReply);
+  rpc Login (LoginRequest) returns (LoginReply);
+}
+
+message GetGoogleLoginUrlRequest { }
+
+message GetGoogleLoginUrlReply {
+  string url = 1;
+}
+
+message LoginRequest {
+  string code = 1;
+}
+
+message LoginReply {
+  string message = 1;
+}
