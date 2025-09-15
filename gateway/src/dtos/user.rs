@@ -1,11 +1,14 @@
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Serialize)]
 pub struct LoginRequestDto {
     pub code: String,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Serialize)]
 pub struct LoginResponseDto {
-    pub message: String,
+    pub id: String,
+    pub email: String,
+    pub name: String,
+    pub token: String,
 }

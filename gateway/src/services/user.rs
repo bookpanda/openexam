@@ -1,20 +1,20 @@
-use log::{error, info};
+use log::error;
 use std::sync::Arc;
 use tonic::transport::Channel;
 
 use crate::{
-    dtos::user::LoginRequestDto,
-    proto::auth::{GetGoogleLoginUrlRequest, LoginRequest, auth_client::AuthClient},
+    dtos::user::{LoginRequestDto, LoginResponseDto},
+    proto::user::{GetGoogleLoginUrlRequest, LoginRequest, user_client::UserClient},
     services::response::ServiceResponse,
 };
 
 #[derive(Debug, Clone)]
 pub struct UserService {
-    user_client: Arc<AuthClient<Channel>>,
+    user_client: Arc<UserClient<Channel>>,
 }
 
 impl UserService {
-    pub fn new(user_client: AuthClient<Channel>) -> Self {
+    pub fn new(user_client: UserClient<Channel>) -> Self {
         Self {
             user_client: Arc::new(user_client),
         }
@@ -32,12 +32,20 @@ impl UserService {
             }
         }
     }
-    pub async fn login(&self, request: LoginRequestDto) -> ServiceResponse<String> {
+    pub async fn login(&self, request: LoginRequestDto) -> ServiceResponse<LoginResponseDto> {
         let mut client = (*self.user_client).clone();
         let request = LoginRequest { code: request.code };
 
         match client.login(request).await {
-            Ok(response) => ServiceResponse::ok(response.into_inner().message),
+            Ok(response) => {
+                let response = response.into_inner();
+                ServiceResponse::ok(LoginResponseDto {
+                    id: response.id,
+                    email: response.email,
+                    name: response.name,
+                    token: response.token,
+                })
+            }
             Err(e) => {
                 error!("Login error: {:?}", e);
                 ServiceResponse::internal_error(&format!("Login error: {:?}", e))

@@ -37,10 +37,10 @@ impl UserService {
         }
     }
 
-    pub async fn find_by_email(&self, email: String) -> Result<User, Status> {
+    pub async fn find_by_email(&self, email: &str) -> Result<Option<User>, Status> {
         match self.user_repo.find_by_email(email).await {
-            Ok(Some(user)) => Ok(user),
-            Ok(None) => Err(Status::not_found("User not found")),
+            Ok(Some(user)) => Ok(Some(user)),
+            Ok(None) => Ok(None),
             Err(e) => {
                 error!("Failed to find user by email: {:?}", e);
                 Err(Status::internal("Database error"))
@@ -48,15 +48,15 @@ impl UserService {
         }
     }
 
-    pub async fn create(&self, name: String) -> Result<User, Status> {
-        match self.user_repo.create(name.clone()).await {
+    pub async fn create(&self, user: &User) -> Result<User, Status> {
+        match self.user_repo.create(&user).await {
             Ok(user) => {
-                info!("Successfully created user: {}", name);
+                info!("Successfully created user: {}", user.email);
                 Ok(user)
             }
             Err(e) => {
-                error!("Failed to create user '{}': {:?}", name, e);
-                Err(Status::internal("Database error"))
+                error!("Failed to create user '{}': {:?}", user.email, e);
+                Err(Status::internal("Failed to create user"))
             }
         }
     }

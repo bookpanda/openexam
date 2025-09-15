@@ -1,8 +1,5 @@
-use oauth2::{
-    AsyncHttpClient, AuthorizationCode, CsrfToken, EndpointNotSet, EndpointSet, ExtraTokenFields,
-    Scope, StandardTokenResponse, TokenResponse,
-};
-use serde::{Deserialize, Serialize};
+use oauth2::{AuthorizationCode, CsrfToken, EndpointNotSet, EndpointSet, Scope, TokenResponse};
+use serde::Deserialize;
 use tonic::Status;
 
 use crate::config::config::OAuthConfig;
@@ -13,7 +10,6 @@ use reqwest;
 pub struct UserInfo {
     pub email: String,
     pub name: String,
-    pub sub: String,
 }
 
 #[derive(Debug)]
@@ -46,11 +42,6 @@ impl OAuthService {
 
     pub async fn get_access_token(&self, code: String) -> Result<String, Status> {
         let code = AuthorizationCode::new(code);
-
-        let http_client = reqwest::ClientBuilder::new()
-            .redirect(reqwest::redirect::Policy::none())
-            .build()
-            .expect("Client should build");
 
         let token_response = self
             .oauth_client

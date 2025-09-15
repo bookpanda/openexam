@@ -1,8 +1,8 @@
 syntax = "proto3";
 
-package auth;
+package user;
 
-service Auth {
+service User {
   rpc GetGoogleLoginUrl (GetGoogleLoginUrlRequest) returns (GetGoogleLoginUrlReply);
   rpc Login (LoginRequest) returns (LoginReply);
 }
@@ -18,5 +18,8 @@ message LoginRequest {
 }
 
 message LoginReply {
-  string message = 1;
+  string id = 1;
+  string email = 2;
+  string name = 3;
+  string token = 4;
 }

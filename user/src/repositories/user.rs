@@ -26,7 +26,7 @@ impl UserRepo {
         Ok(user)
     }
 
-    pub async fn find_by_email(&self, email: String) -> anyhow::Result<Option<User>> {
+    pub async fn find_by_email(&self, email: &str) -> anyhow::Result<Option<User>> {
         let user = sqlx::query_as::<_, User>("SELECT id, name FROM users WHERE email = $1")
             .bind(email)
             .fetch_optional(&self.pool)
@@ -34,12 +34,14 @@ impl UserRepo {
         Ok(user)
     }
 
-    pub async fn create(&self, name: String) -> anyhow::Result<User> {
-        let user =
-            sqlx::query_as::<_, User>("INSERT INTO users (name) VALUES ($1) RETURNING id, name")
-                .bind(name)
-                .fetch_one(&self.pool)
-                .await?;
+    pub async fn create(&self, user: &User) -> anyhow::Result<User> {
+        let user = sqlx::query_as::<_, User>(
+            "INSERT INTO users (name, email) VALUES ($1, $2) RETURNING id, name, email",
+        )
+        .bind(user.name.clone())
+        .bind(user.email.clone())
+        .fetch_one(&self.pool)
+        .await?;
         Ok(user)
     }
 

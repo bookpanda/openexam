@@ -1,17 +1,17 @@
-use crate::proto::auth::auth_server::{Auth, AuthServer};
-use crate::proto::auth::{
+use crate::proto::user::user_server::{User, UserServer};
+use crate::proto::user::{
     GetGoogleLoginUrlReply, GetGoogleLoginUrlRequest, LoginReply, LoginRequest,
 };
 use crate::services::auth::AuthService;
 use tonic::{Request, Response, Status};
 
 #[derive(Debug)]
-pub struct MyAuth {
+pub struct MyUser {
     pub auth_service: AuthService,
 }
 
 #[tonic::async_trait]
-impl Auth for MyAuth {
+impl User for MyUser {
     async fn get_google_login_url(
         &self,
         request: Request<GetGoogleLoginUrlRequest>,
@@ -24,12 +24,12 @@ impl Auth for MyAuth {
     }
 }
 
-impl MyAuth {
+impl MyUser {
     pub fn new(auth_service: AuthService) -> Self {
         Self { auth_service }
     }
 }
 
-pub fn auth_server(auth_service: AuthService) -> AuthServer<MyAuth> {
-    AuthServer::new(MyAuth::new(auth_service))
+pub fn auth_server(auth_service: AuthService) -> UserServer<MyUser> {
+    UserServer::new(MyUser::new(auth_service))
 }
