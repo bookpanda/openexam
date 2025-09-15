@@ -1,13 +1,11 @@
-use std::sync::Arc;
-
-use crate::handlers::user::UserHandler;
+use crate::handlers::user::{UserHandler, get_google_login_url, login};
 use axum::{
     Router,
     routing::{get, post},
 };
 
-pub fn auth_routes(user_handler: Arc<UserHandler>) -> Router {
+pub fn auth_routes() -> Router<UserHandler> {
     Router::new()
-        .route("/user/google", get(UserHandler::get_google_login_url))
-        .route("/user/google/callback", post(UserHandler::login))
+        .route("/user/google", get(get_google_login_url))
+        .route("/user/google/callback", post(login))
 }

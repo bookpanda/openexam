@@ -20,9 +20,9 @@ async fn main() -> anyhow::Result<()> {
 
     let user_client = AuthClient::connect(config.server.user_grpc_url).await?;
     let user_service = Arc::new(UserService::new(user_client));
-    let user_handler = Arc::new(UserHandler::new(user_service));
+    let user_handler = UserHandler::new(user_service);
 
-    let app = Router::new().nest("/api", auth_routes(user_handler));
+    let app = Router::new().nest("/api", auth_routes().with_state(user_handler));
 
     let addr = SocketAddr::from(([127, 0, 0, 1], config.server.gateway_port));
     let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
