@@ -6,7 +6,7 @@ use crate::dtos;
 use crate::proto::user::ValidateTokenRequest;
 use crate::{
     proto::user::{GetGoogleLoginUrlRequest, LoginRequest, user_client::UserClient},
-    services::response::ServiceResponse,
+    services::response::ApiResponse,
 };
 
 #[derive(Debug, Clone)]
@@ -21,29 +21,29 @@ impl UserService {
         }
     }
 
-    pub async fn get_google_login_url(&self) -> ServiceResponse<String> {
+    pub async fn get_google_login_url(&self) -> ApiResponse<String> {
         let mut client = (*self.user_client).clone();
         let request = GetGoogleLoginUrlRequest {};
 
         match client.get_google_login_url(request).await {
-            Ok(response) => ServiceResponse::ok(response.into_inner().url),
+            Ok(response) => ApiResponse::ok(response.into_inner().url),
             Err(e) => {
                 error!("Get google login url error: {:?}", e);
-                ServiceResponse::internal_error(&format!("Get google login url error: {:?}", e))
+                ApiResponse::internal_error(&format!("Get google login url error: {:?}", e))
             }
         }
     }
     pub async fn login(
         &self,
         request: dtos::LoginRequestDto,
-    ) -> ServiceResponse<dtos::LoginResponseDto> {
+    ) -> ApiResponse<dtos::LoginResponseDto> {
         let mut client = (*self.user_client).clone();
         let request = LoginRequest { code: request.code };
 
         match client.login(request).await {
             Ok(response) => {
                 let response = response.into_inner();
-                ServiceResponse::ok(dtos::LoginResponseDto {
+                ApiResponse::ok(dtos::LoginResponseDto {
                     id: response.id,
                     email: response.email,
                     name: response.name,
@@ -52,7 +52,7 @@ impl UserService {
             }
             Err(e) => {
                 error!("Login error: {:?}", e);
-                ServiceResponse::internal_error(&format!("Login error: {:?}", e))
+                ApiResponse::internal_error(&format!("Login error: {:?}", e))
             }
         }
     }
@@ -60,7 +60,7 @@ impl UserService {
     pub async fn validate_token(
         &self,
         request: dtos::ValidateTokenRequestDto,
-    ) -> ServiceResponse<dtos::ValidateTokenResponseDto> {
+    ) -> ApiResponse<dtos::ValidateTokenResponseDto> {
         let mut client = (*self.user_client).clone();
         let request = ValidateTokenRequest {
             token: request.token,
@@ -69,7 +69,7 @@ impl UserService {
         match client.validate_token(request).await {
             Ok(response) => {
                 let response = response.into_inner();
-                ServiceResponse::ok(dtos::ValidateTokenResponseDto {
+                ApiResponse::ok(dtos::ValidateTokenResponseDto {
                     id: response.id,
                     email: response.email,
                     name: response.name,
@@ -77,7 +77,7 @@ impl UserService {
             }
             Err(e) => {
                 error!("Validate token error: {:?}", e);
-                ServiceResponse::internal_error(&format!("Validate token error: {:?}", e))
+                ApiResponse::internal_error(&format!("Validate token error: {:?}", e))
             }
         }
     }
