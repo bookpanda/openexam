@@ -1,22 +1,15 @@
-use std::sync::Arc;
-
 use crate::dtos::user::LoginRequestDto;
 use crate::services::user::UserService;
 use axum::extract::State;
 use axum::{Json, response::IntoResponse};
 
-#[derive(serde::Deserialize)]
-pub struct CreateUser {
-    pub name: String,
-}
-
 #[derive(Debug, Clone)]
 pub struct UserHandler {
-    user_service: Arc<UserService>,
+    user_service: UserService,
 }
 
 impl UserHandler {
-    pub fn new(user_service: Arc<UserService>) -> Self {
+    pub fn new(user_service: UserService) -> Self {
         Self { user_service }
     }
 
