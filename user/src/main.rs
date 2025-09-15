@@ -18,8 +18,8 @@ mod services;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    env_logger::init();
     dotenvy::dotenv().ok();
-
     let config = config::config::Config::from_env()?;
 
     let pool = connect(&config.database).await;
