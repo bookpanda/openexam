@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use crate::dtos::user::LoginRequestDto;
 use crate::services::response::ServiceResponse;
 use crate::services::user::UserService;
@@ -11,11 +13,11 @@ pub struct CreateUser {
 
 #[derive(Debug)]
 pub struct UserHandler {
-    user_service: UserService,
+    user_service: Arc<UserService>,
 }
 
 impl UserHandler {
-    pub fn new(user_service: UserService) -> Self {
+    pub fn new(user_service: Arc<UserService>) -> Self {
         Self { user_service }
     }
 

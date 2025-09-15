@@ -19,8 +19,8 @@ async fn main() -> anyhow::Result<()> {
     let config = config::config::Config::from_env()?;
 
     let user_client = AuthClient::connect(config.server.user_grpc_url).await?;
-    let user_service = UserService::new(user_client);
-    let user_handler = UserHandler::new(user_service);
+    let user_service = Arc::new(UserService::new(user_client));
+    let user_handler = Arc::new(UserHandler::new(user_service));
 
     let app = Router::new().nest("/api", auth_routes(user_handler));
 
