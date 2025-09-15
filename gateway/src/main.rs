@@ -4,6 +4,7 @@ use crate::routes::auth::auth_routes;
 use crate::services::user::UserService;
 use axum::Router;
 use std::net::SocketAddr;
+use tower_http::cors::Any;
 use utoipa_swagger_ui::SwaggerUi;
 
 mod config;
@@ -24,7 +25,14 @@ async fn main() -> anyhow::Result<()> {
     let user_service = UserService::new(user_client);
     let user_handler = UserHandler::new(user_service);
 
-    let mut app = Router::new().nest("/api", auth_routes().with_state(user_handler));
+    let cors = tower_http::cors::CorsLayer::new()
+        .allow_headers(Any)
+        .allow_methods(Any)
+        .allow_origin(Any);
+
+    let mut app = Router::new()
+        .nest("/api", auth_routes().with_state(user_handler))
+        .layer(cors);
 
     if config.app.debug {
         app = app.merge(SwaggerUi::new("/swagger").url("/api-docs/openapi.json", docs::get_doc()));
