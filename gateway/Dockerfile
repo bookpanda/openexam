@@ -17,7 +17,7 @@ RUN apt-get update \
 # don't wanna run as root (too much permissions in case of a security breach)
 RUN useradd --create-home --shell /bin/false appuser
 WORKDIR /home/appuser
-COPY --from=builder /usr/src/app/target/release/openexam_user /usr/local/bin/app
+COPY --from=builder /usr/src/app/target/release/openexam_gateway /usr/local/bin/app
 
 # if your app needs a config directory, create it and set permissions
 RUN chown appuser:appuser /usr/local/bin/app
