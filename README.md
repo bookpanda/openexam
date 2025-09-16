@@ -14,13 +14,9 @@
 this will run lastest images of all services
 1. pull images used in `docker-compose.yml`
 ```bash
-# arm64 e.g. mac m1
-docker pull --platform=linux/arm64 ghcr.io/bookpanda/openexam-gateway:latest
-docker pull --platform=linux/arm64 ghcr.io/bookpanda/openexam-user:latest
-
-# amd64 e.g. x86_64
-docker pull ghcr.io/bookpanda/openexam-gateway:latest
-docker pull ghcr.io/bookpanda/openexam-user:latest
+# amd64 e.g. x86_64 (force pulling amd64 images on apple silicon)
+docker pull --platform=linux/amd64 ghcr.io/bookpanda/openexam-gateway:latest
+docker pull --platform=linux/amd64 ghcr.io/bookpanda/openexam-user:latest
 ```
 2. Copy `.env.template` and paste it in the same directory as `.env`. Fill in the appropriate values.
 3. Run `docker compose up -d` to start the services.
