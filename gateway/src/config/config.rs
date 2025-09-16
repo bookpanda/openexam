@@ -13,6 +13,7 @@ pub struct AppConfig {
 
 #[derive(Debug, Clone)]
 pub struct ServerConfig {
+    pub gateway_host: String,
     pub gateway_port: u16,
     pub user_grpc_url: String,
 }
@@ -39,6 +40,7 @@ impl AppConfig {
 impl ServerConfig {
     fn from_env() -> anyhow::Result<Self> {
         Ok(Self {
+            gateway_host: env::var("GATEWAY_HOST").unwrap_or_else(|_| "127.0.0.1".to_string()),
             gateway_port: env::var("GATEWAY_PORT")
                 .unwrap_or_else(|_| "3000".to_string())
                 .parse()?,
