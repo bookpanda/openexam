@@ -38,9 +38,12 @@ async fn main() -> anyhow::Result<()> {
         app = app.merge(SwaggerUi::new("/swagger").url("/api-docs/openapi.json", docs::get_doc()));
     }
 
-    let addr = SocketAddr::from(([127, 0, 0, 1], config.server.gateway_port));
-    println!("Server running on http://{}", addr);
+    let addr = SocketAddr::new(
+        config.server.gateway_host.parse()?,
+        config.server.gateway_port,
+    );
     let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
+    println!("Server running on http://{}", addr);
     axum::serve(listener, app).await.unwrap();
 
     Ok(())

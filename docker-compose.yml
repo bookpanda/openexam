@@ -1,0 +1,56 @@
+version: '3.9'
+
+services:
+  openexam-gateway:
+    image: ghcr.io/bookpanda/openexam-gateway:latest
+    container_name: openexam-gateway
+    depends_on:
+      - openexam-user
+    restart: unless-stopped
+    environment:
+      - DEBUG=true
+      - GATEWAY_HOST=0.0.0.0
+      - GATEWAY_PORT=3001
+      - USER_GRPC_URL=http://openexam-user:50051
+    ports:
+      - 3001:3001
+    networks:
+      - openexam
+
+  openexam-user:
+    image: ghcr.io/bookpanda/openexam-user:latest
+    container_name: openexam-user
+    depends_on:
+      - openexam-postgres
+    restart: unless-stopped
+    environment:
+      - GRPC_ADDR=0.0.0.0:50051
+      - DATABASE_URL=postgres://root:1234@openexam-postgres:5432/user_db
+      - OAUTH_CLIENT_ID=${OAUTH_CLIENT_ID}
+      - OAUTH_CLIENT_SECRET=${OAUTH_CLIENT_SECRET}
+      - OAUTH_REDIRECT_URL=${OAUTH_REDIRECT_URL}
+    ports:
+      - 50051:50051
+    networks:
+      - openexam
+
+  openexam-postgres:
+    image: postgres:17-alpine3.21
+    container_name: openexam-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: 1234
+      POSTGRES_DB: user_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - 5432:5432
+    networks:
+      - openexam
+
+networks:
+  openexam:
+
+volumes:
+  postgres_data:
