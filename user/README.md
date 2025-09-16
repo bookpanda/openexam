@@ -2,5 +2,6 @@
 ```bash
 cargo watch -x run
 
-cargo build
+cargo build --incremental
+cargo build -j 4
 ```
