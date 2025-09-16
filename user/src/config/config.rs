@@ -25,7 +25,6 @@ pub struct OAuthConfig {
 #[derive(Debug, Clone)]
 pub struct ServerConfig {
     pub grpc_addr: String,
-    pub http_addr: String,
 }
 
 impl Config {
@@ -69,7 +68,6 @@ impl ServerConfig {
     fn from_env() -> anyhow::Result<Self> {
         Ok(Self {
             grpc_addr: env::var("GRPC_ADDR").unwrap_or_else(|_| "127.0.0.1:50051".to_string()),
-            http_addr: env::var("HTTP_ADDR").unwrap_or_else(|_| "127.0.0.1:3000".to_string()),
         })
     }
 }
