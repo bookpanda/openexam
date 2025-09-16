@@ -20,11 +20,11 @@ services:
     image: ghcr.io/bookpanda/openexam-user:latest
     container_name: openexam-user
     depends_on:
-      - postgres
+      - openexam-postgres
     restart: unless-stopped
     environment:
       - GRPC_ADDR=0.0.0.0:50051
-      - DATABASE_URL=postgres://root:1234@postgres:5432/user_db
+      - DATABASE_URL=postgres://root:1234@openexam-postgres:5432/user_db
       - OAUTH_CLIENT_ID=${OAUTH_CLIENT_ID}
       - OAUTH_CLIENT_SECRET=${OAUTH_CLIENT_SECRET}
       - OAUTH_REDIRECT_URL=${OAUTH_REDIRECT_URL}
@@ -33,9 +33,9 @@ services:
     networks:
       - openexam
 
-  postgres:
+  openexam-postgres:
     image: postgres:17-alpine3.21
-    container_name: postgres
+    container_name: openexam-postgres
     restart: unless-stopped
     environment:
       POSTGRES_USER: root
