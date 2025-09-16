@@ -14,7 +14,7 @@ on:
 
 env:
   SERVICE_NAME: openexam-user 
-  IMAGE_NAME: ghcr.io/${{ github.repository }}
+  IMAGE_NAME: ghcr.io/${{ github.repository }}-user
   IMAGE_TAG: <WILL_BE_SET>
 
 jobs:

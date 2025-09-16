@@ -14,7 +14,7 @@ on:
 
 env:
   SERVICE_NAME: openexam-gateway 
-  IMAGE_NAME: ghcr.io/${{ github.repository }}
+  IMAGE_NAME: ghcr.io/${{ github.repository }}-gateway
   IMAGE_TAG: <WILL_BE_SET>
 
 jobs:
