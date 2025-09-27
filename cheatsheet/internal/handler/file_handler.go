@@ -66,7 +66,7 @@ func (h *FileHandler) Download(c *fiber.Ctx) error {
 }
 
 func (h *FileHandler) Remove(c *fiber.Ctx) error {
-	key := c.Query("key") // ⬅️ เปลี่ยนจาก Params เป็น Query
+	key := c.Query("key")
 	if key == "" {
 		return httpx.BadRequest(c, "key is required")
 	}
