@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/gofiber/fiber/v2"
 	"github.com/joho/godotenv"
@@ -23,10 +24,18 @@ func main() {
 
 	s3Client := s3.NewFromConfig(cfg.AwsCfg)
 	repo := repository.NewS3Repository(s3Client, cfg.Bucket)
-	svc := service.NewFileService(repo, cfg.MaxUploadMB)
+
+	// DynamoDB
+	ddbClient := dynamodb.NewFromConfig(cfg.AwsCfg)
+	metaRepo := repository.NewDynamoDBRepository(ddbClient, "cheatsheets", "shares")
+
+	svc := service.NewFileService(repo, metaRepo, cfg.MaxUploadMB)
 	fh := handler.NewFileHandler(svc)
 
-	app.SetupRoutes(appHttp, fh)
+	shareSvc := service.NewShareService(metaRepo)
+	sh := handler.NewShareHandler(shareSvc)
+
+	app.SetupRoutes(appHttp, fh, sh)
 
 	appHttp.Listen(":" + cfg.Port)
 }

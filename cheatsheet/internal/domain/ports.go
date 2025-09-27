@@ -19,3 +19,19 @@ type FileService interface {
 	Remove(ctx context.Context, key string) error
 	GetPresignedURL(ctx context.Context, key string, ttl time.Duration) (string, error)
 }
+
+type MetadataRepository interface {
+	SaveCheatsheet(ctx context.Context, c Cheatsheet) error
+	DeleteCheatsheet(ctx context.Context, id string) error
+	ShareCheatsheet(ctx context.Context, userId, cheatsheetId string) error
+	UnshareCheatsheet(ctx context.Context, userId, cheatsheetId string) error
+
+	DeleteCheatsheetByKey(ctx context.Context, key string) error
+	DeleteSharesByCheatsheetID(ctx context.Context, cheatsheetId string) error
+	FindCheatsheetByKey(ctx context.Context, key string) (Cheatsheet, error)
+}
+
+type ShareService interface {
+	Share(ctx context.Context, userId, cheatsheetId string) error
+	Unshare(ctx context.Context, userId, cheatsheetId string) error
+}
