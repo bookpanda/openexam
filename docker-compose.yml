@@ -49,6 +49,37 @@ services:
     networks:
       - openexam
 
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"   # AMQP
+      - "15672:15672" # Management UI
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: openExam2025
+    networks:
+      - openexam
+
+  openexam-cheatsheet:
+    image: ghcr.io/tanasinp/openexam-cheatsheet:latest
+    container_name: openexam-cheatsheet
+    depends_on:
+      - rabbitmq
+    restart: unless-stopped
+    environment:
+      - GRPC_ADDR=0.0.0.0:50052
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_REGION=${AWS_REGION}
+      - S3_BUCKET=${S3_BUCKET}
+      - AMQP_URL=amqp://admin:openExam2025@rabbitmq:5672/
+      - AMQP_EXCHANGE=storage.topic
+    ports:
+      - 3000:3000
+    networks:
+      - openexam
+      
 networks:
   openexam:
 

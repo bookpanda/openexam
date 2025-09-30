@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"storage/internal/domain"
+	"storage/internal/mq"
 
 	"github.com/google/uuid"
 )
@@ -18,10 +19,16 @@ type FileServiceImpl struct {
 	repo        domain.FileRepository     // S3
 	metaRepo    domain.MetadataRepository // DynamoDB
 	maxUploadMB int64
+	publisher   *mq.Publisher
 }
 
-func NewFileService(repo domain.FileRepository, metaRepo domain.MetadataRepository, maxUploadMB int64) domain.FileService {
-	return &FileServiceImpl{repo: repo, metaRepo: metaRepo, maxUploadMB: maxUploadMB}
+func NewFileService(repo domain.FileRepository, metaRepo domain.MetadataRepository, publisher *mq.Publisher, maxUploadMB int64) domain.FileService {
+	return &FileServiceImpl{
+		repo:        repo,
+		metaRepo:    metaRepo,
+		publisher:   publisher,
+		maxUploadMB: maxUploadMB,
+	}
 }
 
 func (s *FileServiceImpl) Upload(ctx context.Context, userId, filename string, content io.Reader, size int64, contentType string) (domain.FileObject, error) {
@@ -43,7 +50,6 @@ func (s *FileServiceImpl) Upload(ctx context.Context, userId, filename string, c
 	if err := s.repo.Put(ctx, key, content, size, contentType); err != nil {
 		return domain.FileObject{}, err
 	}
-	// return domain.FileObject{Key: key, Size: size, ContentType: contentType}, nil
 
 	// Save metadata
 	cheatsheet := domain.Cheatsheet{
@@ -57,7 +63,21 @@ func (s *FileServiceImpl) Upload(ctx context.Context, userId, filename string, c
 		return domain.FileObject{}, err
 	}
 
-	return domain.FileObject{Key: key, Size: size, ContentType: contentType}, nil
+	// Build file object
+	fileObj := domain.FileObject{
+		Key:         key,
+		Size:        size,
+		ContentType: contentType,
+	}
+
+	// Publish event
+	_ = s.publisher.Publish("file.upload", map[string]interface{}{
+		"userId": userId,
+		"key":    key,
+		"name":   filename,
+	})
+
+	return fileObj, nil
 }
 
 func (s *FileServiceImpl) Download(ctx context.Context, key string) (io.ReadCloser, int64, string, error) {

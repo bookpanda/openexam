@@ -1,6 +1,8 @@
 package main
 
 import (
+	"log"
+
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/gofiber/fiber/v2"
@@ -9,6 +11,7 @@ import (
 	"storage/internal/app"
 	"storage/internal/config"
 	"storage/internal/handler"
+	"storage/internal/mq"
 	"storage/internal/repository"
 	"storage/internal/service"
 )
@@ -29,13 +32,25 @@ func main() {
 	ddbClient := dynamodb.NewFromConfig(cfg.AwsCfg)
 	metaRepo := repository.NewDynamoDBRepository(ddbClient, "cheatsheets", "shares")
 
-	svc := service.NewFileService(repo, metaRepo, cfg.MaxUploadMB)
-	fh := handler.NewFileHandler(svc)
+	// RabbitMQ
+	mqConn := mq.NewMQ()
+	defer mqConn.Conn.Close()
+	defer mqConn.Channel.Close()
+	pub := mq.NewPublisher(mqConn)
+
+	// Service + Handler
+	fileSvc := service.NewFileService(repo, metaRepo, pub, cfg.MaxUploadMB)
+	fileHandler := handler.NewFileHandler(fileSvc)
 
 	shareSvc := service.NewShareService(metaRepo)
-	sh := handler.NewShareHandler(shareSvc)
+	shareHandler := handler.NewShareHandler(shareSvc)
 
-	app.SetupRoutes(appHttp, fh, sh)
+	// Routes
+	app.SetupRoutes(appHttp, fileHandler, shareHandler)
+
+	// Example consumer: listen file upload events
+	// go mq.StartConsumer(mqConn, "log-queue", "file.upload")
 
 	appHttp.Listen(":" + cfg.Port)
+	log.Fatal(appHttp.Listen(":" + cfg.Port))
 }
