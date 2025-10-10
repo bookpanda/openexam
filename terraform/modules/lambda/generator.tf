@@ -42,7 +42,7 @@ resource "aws_lambda_event_source_mapping" "sqs_trigger" {
 }
 
 # CloudWatch Log Group for Lambda
-resource "aws_cloudwatch_log_group" "lambda_logs" {
+resource "aws_cloudwatch_log_group" "generator_logs" {
   name              = "/aws/lambda/${aws_lambda_function.generator.function_name}"
   retention_in_days = 7
 }

@@ -63,9 +63,17 @@ resource "aws_iam_role_policy" "lambda_sqs_s3_dynamodb_policy" {
         Resource = [
           var.cheatsheets_table_arn,
           "${var.cheatsheets_table_arn}/index/*",
-          "${var.slides_table_arn}/*",
+          var.slides_table_arn,
           "${var.slides_table_arn}/index/*"
         ]
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "s3:GetObjectAttributes",
+          "s3:HeadObject"
+        ]
+        Resource = "arn:aws:s3:::${var.bucket_name}/*"
       },
       {
         Effect = "Allow"

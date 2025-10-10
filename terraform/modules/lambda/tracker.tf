@@ -11,13 +11,9 @@ resource "aws_lambda_function" "tracker" {
 
   environment {
     variables = {
-      BUCKET_NAME               = var.bucket_name
-      SOURCE_PREFIX             = "slide"
-      TARGET_PREFIX             = "cheatsheets"
-      SLIDES_TABLE_NAME         = var.slides_table_name
-      CHEATSHEETS_TABLE_NAME    = var.cheatsheets_table_name
-      MAX_CONTENT_PREVIEW_CHARS = "500"
-      MAX_BINARY_PREVIEW_BYTES  = "100"
+      BUCKET_NAME            = var.bucket_name
+      SLIDES_TABLE_NAME      = var.slides_table_name
+      CHEATSHEETS_TABLE_NAME = var.cheatsheets_table_name
     }
   }
 }
@@ -51,7 +47,7 @@ resource "aws_s3_bucket_notification" "s3_to_lambda_tracker" {
 }
 
 # CloudWatch Log Group for Lambda
-resource "aws_cloudwatch_log_group" "lambda_logs" {
+resource "aws_cloudwatch_log_group" "tracker_logs" {
   name              = "/aws/lambda/${aws_lambda_function.tracker.function_name}"
   retention_in_days = 7
 }
