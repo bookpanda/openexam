@@ -31,14 +31,3 @@ resource "aws_sqs_queue_policy" "s3_sqs_policy" {
     ]
   })
 }
-
-resource "aws_s3_bucket_notification" "s3_to_sqs" {
-  bucket = var.bucket_id
-
-  queue {
-    queue_arn = aws_sqs_queue.cheatsheet_queue.arn
-    events    = ["s3:ObjectCreated:*"]
-  }
-
-  depends_on = [aws_sqs_queue_policy.s3_sqs_policy]
-}
