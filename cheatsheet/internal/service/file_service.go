@@ -45,7 +45,7 @@ func (s *FileServiceImpl) Upload(ctx context.Context, userId, filename string, c
 	}
 	// Generate a safe and unique key name
 	prefix := uuid.NewString()[0:6]
-	key := fmt.Sprintf("%s/%s_%s", userId, prefix, filename)
+	key := fmt.Sprintf("%s/cheatsheets/%s_%s", userId, prefix, filename)
 
 	if err := s.repo.Put(ctx, key, content, size, contentType); err != nil {
 		return domain.FileObject{}, err
@@ -69,13 +69,6 @@ func (s *FileServiceImpl) Upload(ctx context.Context, userId, filename string, c
 		Size:        size,
 		ContentType: contentType,
 	}
-
-	// Publish event
-	_ = s.publisher.Publish("file.upload", map[string]interface{}{
-		"userId": userId,
-		"key":    key,
-		"name":   filename,
-	})
 
 	return fileObj, nil
 }
@@ -122,4 +115,18 @@ func (s *FileServiceImpl) Remove(ctx context.Context, key string) error {
 
 func (s *FileServiceImpl) GetPresignedURL(ctx context.Context, key string, ttl time.Duration) (string, error) {
 	return s.repo.PresignGet(ctx, key, ttl)
+}
+
+func (s *FileServiceImpl) GetPresignedUploadURL(ctx context.Context, userId string, filename string, ttl time.Duration) (string, error) {
+	prefix := uuid.NewString()[0:6]
+	key := fmt.Sprintf("%s/slides/%s_%s", userId, prefix, filename)
+
+	// Publish event
+	_ = s.publisher.Publish("file.upload", map[string]interface{}{
+		"userId": userId,
+		"key":    key,
+		"name":   filename,
+	})
+
+	return s.repo.PresignPut(ctx, key, ttl)
 }
