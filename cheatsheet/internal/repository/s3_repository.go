@@ -83,3 +83,14 @@ func (r *S3Repository) PresignGet(ctx context.Context, key string, ttl time.Dura
 	}
 	return req.URL, nil
 }
+
+func (r *S3Repository) PresignPut(ctx context.Context, key string, ttl time.Duration) (string, error) {
+	req, err := r.presigner.PresignPutObject(ctx, &s3.PutObjectInput{
+		Bucket: &r.bucket,
+		Key:    &key,
+	}, s3.WithPresignExpires(ttl))
+	if err != nil {
+		return "", domain.ErrStorageFailed
+	}
+	return req.URL, nil
+}
