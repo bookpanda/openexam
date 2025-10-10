@@ -62,7 +62,7 @@ services:
   #     - openexam
 
   openexam-cheatsheet:
-    image: ghcr.io/tanasinp/openexam-cheatsheet:latest
+    image: ghcr.io/bookpanda/openexam-cheatsheet:latest
     container_name: openexam-cheatsheet
     depends_on:
       - rabbitmq

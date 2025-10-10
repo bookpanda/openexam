@@ -7,9 +7,3 @@ variable "app_name" {
   description = "The name of the app"
   type        = string
 }
-
-variable "sns_topic_endpoint" {
-  description = "The endpoint for the SNS topic to send notifications to"
-  type        = string
-}
-
