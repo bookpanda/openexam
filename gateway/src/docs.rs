@@ -12,10 +12,10 @@ use utoipa::{
         crate::handlers::user::validate_token,
     ),
     components(schemas(
-        crate::dtos::ValidateTokenRequestDto,
-        crate::dtos::ValidateTokenResponseDto,
-        crate::dtos::LoginRequestDto,
-        crate::dtos::LoginResponseDto,
+        crate::dtos::ValidateTokenRequest,
+        crate::dtos::ValidateTokenResponse,
+        crate::dtos::LoginRequest,
+        crate::dtos::LoginResponse,
 
     )),
     info(

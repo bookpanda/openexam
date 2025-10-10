@@ -35,15 +35,15 @@ pub async fn get_google_login_url(State(handler): State<UserHandler>) -> impl In
     post,
     path = "/api/user/google/callback",
     tag = "User",
-    request_body = dtos::LoginRequestDto,
+    request_body = dtos::LoginRequest,
     responses(
-        (status = 200, description = "Success", body = dtos::LoginResponseDto),
+        (status = 200, description = "Success", body = dtos::LoginResponse),
         (status = 500, description = "Internal server error"),
     ),
 )]
 pub async fn login(
     State(handler): State<UserHandler>,
-    Json(request): Json<dtos::LoginRequestDto>,
+    Json(request): Json<dtos::LoginRequest>,
 ) -> impl IntoResponse {
     handler
         .user_service
@@ -56,16 +56,16 @@ pub async fn login(
     post,
     path = "/api/user/validate-token",
     tag = "User",
-    request_body = dtos::ValidateTokenRequestDto,
+    request_body = dtos::ValidateTokenRequest,
     responses(
-        (status = 200, description = "Success", body = dtos::ValidateTokenResponseDto),
+        (status = 200, description = "Success", body = dtos::ValidateTokenResponse),
         (status = 401, description = "Unauthorized"),
         (status = 500, description = "Internal server error"),
     ),
 )]
 pub async fn validate_token(
     State(handler): State<UserHandler>,
-    Json(request): Json<dtos::ValidateTokenRequestDto>,
+    Json(request): Json<dtos::ValidateTokenRequest>,
 ) -> impl IntoResponse {
     handler
         .user_service
