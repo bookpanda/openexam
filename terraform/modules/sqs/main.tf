@@ -1,6 +1,6 @@
 resource "aws_sqs_queue" "cheatsheet_queue" {
   name                       = "${var.app_name}-queue"
-  visibility_timeout_seconds = 30    # How long a message stays invisible after being received
+  visibility_timeout_seconds = 360   # 6 minutes (should be >= Lambda timeout * 6)
   message_retention_seconds  = 86400 # 1 day
   delay_seconds              = 0
   receive_wait_time_seconds  = 10 # Enable long polling (reduce empty responses)
