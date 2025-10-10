@@ -14,6 +14,7 @@ resource "aws_lambda_function" "s3_processor" {
       BUCKET_NAME               = var.bucket_name
       SOURCE_PREFIX             = "slide"
       TARGET_PREFIX             = "cheatsheets"
+      CHEATSHEETS_TABLE_NAME    = var.cheatsheets_table_name
       MAX_CONTENT_PREVIEW_CHARS = "500"
       MAX_BINARY_PREVIEW_BYTES  = "100"
     }
@@ -56,9 +57,9 @@ resource "aws_iam_role_policy_attachment" "lambda_basic" {
   role       = aws_iam_role.lambda_role.name
 }
 
-# Policy for Lambda to read from SQS and access S3
-resource "aws_iam_role_policy" "lambda_sqs_s3_policy" {
-  name = "${var.app_name}-lambda-sqs-s3-policy"
+# Policy for Lambda to read from SQS, access S3, and write to DynamoDB
+resource "aws_iam_role_policy" "lambda_sqs_s3_dynamodb_policy" {
+  name = "${var.app_name}-lambda-sqs-s3-dynamodb-policy"
   role = aws_iam_role.lambda_role.id
 
   policy = jsonencode({
@@ -83,6 +84,19 @@ resource "aws_iam_role_policy" "lambda_sqs_s3_policy" {
           "s3:CopyObject"
         ]
         Resource = "arn:aws:s3:::${var.bucket_name}/*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "dynamodb:PutItem",
+          "dynamodb:GetItem",
+          "dynamodb:Query",
+          "dynamodb:UpdateItem"
+        ]
+        Resource = [
+          var.cheatsheets_table_arn,
+          "${var.cheatsheets_table_arn}/index/*"
+        ]
       },
       {
         Effect = "Allow"
