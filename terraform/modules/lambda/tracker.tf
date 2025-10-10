@@ -30,16 +30,24 @@ data "archive_file" "tracker_zip" {
   excludes    = ["__pycache__", "*.pyc", "*.pyo", ".pytest_cache", ".mypy_cache"]
 }
 
+# Lambda permission to allow S3 to invoke the function
+resource "aws_lambda_permission" "allow_s3_invoke" {
+  statement_id  = "AllowExecutionFromS3"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.tracker.function_name
+  principal     = "s3.amazonaws.com"
+  source_arn    = "arn:aws:s3:::${var.bucket_name}"
+}
 
-resource "aws_s3_bucket_notification" "s3_to_sqs" {
+resource "aws_s3_bucket_notification" "s3_to_lambda_tracker" {
   bucket = var.bucket_id
 
   lambda_function {
     lambda_function_arn = aws_lambda_function.tracker.arn
-    events              = ["s3:ObjectCreated:*", ""]
+    events              = ["s3:ObjectCreated:*", "s3:ObjectRemoved:*"]
   }
 
-  depends_on = [aws_iam_role_policy.lambda_sqs_s3_dynamodb_policy]
+  depends_on = [aws_lambda_permission.allow_s3_invoke]
 }
 
 # CloudWatch Log Group for Lambda
