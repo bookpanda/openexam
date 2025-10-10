@@ -22,7 +22,7 @@ WORKDIR /app
 COPY --from=builder /app/cheatsheet .
 
 # copy env
-COPY .env .env
+# COPY .env .env
 
 EXPOSE 3000
 
