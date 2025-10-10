@@ -1,3 +1,13 @@
+output "slides_table_name" {
+  description = "Name of the slides DynamoDB table"
+  value       = aws_dynamodb_table.slides.name
+}
+
+output "slides_table_arn" {
+  description = "ARN of the slides DynamoDB table"
+  value       = aws_dynamodb_table.slides.arn
+}
+
 output "cheatsheets_table_name" {
   description = "Name of the cheatsheets DynamoDB table"
   value       = aws_dynamodb_table.cheatsheets.name

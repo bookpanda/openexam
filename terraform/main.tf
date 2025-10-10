@@ -20,7 +20,10 @@ module "lambda" {
   source                 = "./modules/lambda"
   app_name               = var.app_name
   bucket_name            = module.s3.bucket_name
+  bucket_id              = module.s3.bucket_id
   queue_arn              = module.sqs.queue_arn
+  slides_table_name      = module.dynamodb.slides_table_name
+  slides_table_arn       = module.dynamodb.slides_table_arn
   cheatsheets_table_name = module.dynamodb.cheatsheets_table_name
   cheatsheets_table_arn  = module.dynamodb.cheatsheets_table_arn
 }

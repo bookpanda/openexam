@@ -1,37 +1,3 @@
-# Lambda function that processes S3 upload events from SQS
-resource "aws_lambda_function" "s3_processor" {
-  filename         = data.archive_file.lambda_zip.output_path
-  function_name    = "${var.app_name}-s3-processor"
-  role             = aws_iam_role.lambda_role.arn
-  handler          = "main.handler"
-  source_code_hash = data.archive_file.lambda_zip.output_base64sha256
-  runtime          = "python3.12"
-  timeout          = 60
-  memory_size      = 256
-
-  environment {
-    variables = {
-      BUCKET_NAME               = var.bucket_name
-      SOURCE_PREFIX             = "slide"
-      TARGET_PREFIX             = "cheatsheets"
-      CHEATSHEETS_TABLE_NAME    = var.cheatsheets_table_name
-      MAX_CONTENT_PREVIEW_CHARS = "500"
-      MAX_BINARY_PREVIEW_BYTES  = "100"
-    }
-  }
-
-  tags = {
-    Name = "${var.app_name}-lambda"
-  }
-}
-
-# Create Lambda deployment package from modular source
-data "archive_file" "lambda_zip" {
-  type        = "zip"
-  source_dir  = "${path.root}/../generator/src"
-  output_path = "${path.module}/lambda_function.zip"
-  excludes    = ["__pycache__", "*.pyc", "*.pyo", ".pytest_cache", ".mypy_cache"]
-}
 
 # IAM role for Lambda
 resource "aws_iam_role" "lambda_role" {
@@ -91,11 +57,14 @@ resource "aws_iam_role_policy" "lambda_sqs_s3_dynamodb_policy" {
           "dynamodb:PutItem",
           "dynamodb:GetItem",
           "dynamodb:Query",
-          "dynamodb:UpdateItem"
+          "dynamodb:UpdateItem",
+          "dynamodb:DeleteItem"
         ]
         Resource = [
           var.cheatsheets_table_arn,
-          "${var.cheatsheets_table_arn}/index/*"
+          "${var.cheatsheets_table_arn}/index/*",
+          "${var.slides_table_arn}/*",
+          "${var.slides_table_arn}/index/*"
         ]
       },
       {
@@ -110,21 +79,3 @@ resource "aws_iam_role_policy" "lambda_sqs_s3_dynamodb_policy" {
     ]
   })
 }
-
-# SQS trigger for Lambda
-resource "aws_lambda_event_source_mapping" "sqs_trigger" {
-  event_source_arn = var.queue_arn
-  function_name    = aws_lambda_function.s3_processor.arn
-  batch_size       = 10
-  enabled          = true
-
-  # Optional: Configure how Lambda handles failures
-  function_response_types = ["ReportBatchItemFailures"]
-}
-
-# CloudWatch Log Group for Lambda
-resource "aws_cloudwatch_log_group" "lambda_logs" {
-  name              = "/aws/lambda/${aws_lambda_function.s3_processor.function_name}"
-  retention_in_days = 7
-}
-

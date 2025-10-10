@@ -1,3 +1,34 @@
+resource "aws_dynamodb_table" "slides" {
+  name         = "${var.app_name}-slides"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "id"
+
+  attribute {
+    name = "id"
+    type = "S" # String
+  }
+
+  attribute {
+    name = "key"
+    type = "S"
+  }
+
+  global_secondary_index {
+    name            = "KeyIndex"
+    hash_key        = "key"
+    projection_type = "ALL"
+  }
+
+  point_in_time_recovery {
+    enabled = true
+  }
+
+  server_side_encryption {
+    enabled = true
+  }
+}
+
+
 resource "aws_dynamodb_table" "cheatsheets" {
   name         = "${var.app_name}-cheatsheets"
   billing_mode = "PAY_PER_REQUEST"
@@ -26,10 +57,6 @@ resource "aws_dynamodb_table" "cheatsheets" {
 
   server_side_encryption {
     enabled = true
-  }
-
-  tags = {
-    Name = "${var.app_name}-cheatsheets"
   }
 }
 
@@ -62,10 +89,6 @@ resource "aws_dynamodb_table" "shares" {
   server_side_encryption {
     enabled = true
   }
-
-  tags = {
-    Name = "${var.app_name}-shares"
-  }
 }
 
 resource "aws_iam_policy" "dynamodb_policy" {
@@ -91,14 +114,12 @@ resource "aws_iam_policy" "dynamodb_policy" {
           aws_dynamodb_table.cheatsheets.arn,
           "${aws_dynamodb_table.cheatsheets.arn}/index/*",
           aws_dynamodb_table.shares.arn,
-          "${aws_dynamodb_table.shares.arn}/index/*"
+          "${aws_dynamodb_table.shares.arn}/index/*",
+          aws_dynamodb_table.slides.arn,
+          "${aws_dynamodb_table.slides.arn}/index/*"
         ]
       }
     ]
   })
-
-  tags = {
-    Name = "${var.app_name}-dynamodb-policy"
-  }
 }
 
