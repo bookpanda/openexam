@@ -3,9 +3,9 @@ resource "aws_lambda_function" "s3_processor" {
   filename         = data.archive_file.lambda_zip.output_path
   function_name    = "${var.app_name}-s3-processor"
   role             = aws_iam_role.lambda_role.arn
-  handler          = "index.handler"
+  handler          = "lambda_function.handler"
   source_code_hash = data.archive_file.lambda_zip.output_base64sha256
-  runtime          = "nodejs20.x"
+  runtime          = "python3.12"
   timeout          = 60
   memory_size      = 256
 
@@ -23,7 +23,7 @@ resource "aws_lambda_function" "s3_processor" {
 # Create Lambda deployment package
 data "archive_file" "lambda_zip" {
   type        = "zip"
-  source_file = "${path.module}/lambda_function.js"
+  source_file = "${path.module}/lambda_function.py"
   output_path = "${path.module}/lambda_function.zip"
 }
 
@@ -72,7 +72,10 @@ resource "aws_iam_role_policy" "lambda_sqs_s3_policy" {
         Effect = "Allow"
         Action = [
           "s3:GetObject",
-          "s3:GetObjectVersion"
+          "s3:GetObjectVersion",
+          "s3:PutObject",
+          "s3:PutObjectTagging",
+          "s3:CopyObject"
         ]
         Resource = "arn:aws:s3:::${var.bucket_name}/*"
       },
