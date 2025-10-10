@@ -58,11 +58,14 @@ resource "aws_iam_role_policy" "lambda_sqs_s3_dynamodb_policy" {
           "dynamodb:GetItem",
           "dynamodb:Query",
           "dynamodb:UpdateItem",
-          "dynamodb:DeleteItem"
+          "dynamodb:DeleteItem",
+          "dynamodb:BatchGetItem"
         ]
         Resource = [
           var.files_table_arn,
           "${var.files_table_arn}/index/*",
+          var.shares_table_arn,
+          "${var.shares_table_arn}/index/*",
         ]
       },
       {

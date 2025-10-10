@@ -79,6 +79,18 @@ func (h *FileHandler) Remove(c *fiber.Ctx) error {
 	return httpx.Ok(c, fiber.Map{"deleted": true})
 }
 
+func (h *FileHandler) GetAllFiles(c *fiber.Ctx) error {
+	userId := c.Get("X-User-Id")
+	if userId == "" {
+		return httpx.BadRequest(c, "userId is required")
+	}
+	files, err := h.svc.GetAllFiles(c.Context(), userId)
+	if err != nil {
+		return httpx.FromDomainError(c, err)
+	}
+	return httpx.Ok(c, fiber.Map{"files": files})
+}
+
 func (h *FileHandler) GetPresignedURL(c *fiber.Ctx) error {
 	// key := c.Params("key")
 	key := c.Query("key")

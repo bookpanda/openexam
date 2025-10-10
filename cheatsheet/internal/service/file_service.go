@@ -78,19 +78,17 @@ func (s *FileServiceImpl) Download(ctx context.Context, key string) (io.ReadClos
 
 func (s *FileServiceImpl) Remove(ctx context.Context, fileType string, userId string, file string) error {
 	key := fmt.Sprintf("%s/%s/%s", fileType, userId, file)
-	if fileType == "cheatsheets" {
-		// Find cheatsheet from key before delete shares
 
-		cheatsheet, err := s.metaRepo.FindCheatsheetByKey(ctx, key)
-		if err != nil {
-			return err
-		}
+	// // Find file from key before delete shares
+	// fileObj, err := s.metaRepo.FindCheatsheetByKey(ctx, key)
+	// if err != nil {
+	// 	return err
+	// }
 
-		// delete metadata shares
-		if err := s.metaRepo.DeleteSharesByCheatsheetID(ctx, cheatsheet.ID); err != nil {
-			return err
-		}
-	}
+	// // delete metadata shares for this file
+	// if err := s.metaRepo.DeleteSharesByFileID(ctx, fileObj.ID); err != nil {
+	// 	return err
+	// }
 
 	// delete file from S3
 	if err := s.repo.Delete(ctx, key); err != nil {
@@ -98,6 +96,10 @@ func (s *FileServiceImpl) Remove(ctx context.Context, fileType string, userId st
 	}
 
 	return nil
+}
+
+func (s *FileServiceImpl) GetAllFiles(ctx context.Context, userId string) ([]domain.File, error) {
+	return s.metaRepo.GetAllFiles(ctx, userId)
 }
 
 func (s *FileServiceImpl) GetPresignedURL(ctx context.Context, key string, ttl time.Duration) (string, error) {

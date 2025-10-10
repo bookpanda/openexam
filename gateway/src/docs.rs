@@ -10,13 +10,19 @@ use utoipa::{
         crate::handlers::user::get_google_login_url,
         crate::handlers::user::login,
         crate::handlers::user::validate_token,
+        crate::handlers::cheatsheet::get_presigned_upload_url,
+        crate::handlers::cheatsheet::get_presigned_get_url,
+        crate::handlers::cheatsheet::remove,
+        crate::handlers::cheatsheet::get_all_files,
     ),
     components(schemas(
         crate::dtos::ValidateTokenRequest,
         crate::dtos::ValidateTokenResponse,
         crate::dtos::LoginRequest,
         crate::dtos::LoginResponse,
-
+        crate::dtos::GetPresignedUploadUrlResponse,
+        crate::dtos::GetPresignedGetUrlResponse,
+        crate::dtos::RemoveFileQuery,
     )),
     info(
         title = "openexam",
@@ -28,7 +34,8 @@ use utoipa::{
         (url = "https://openexam.bookpanda.dev", description = "production server")
     ),
     tags(
-        (name = "User")
+        (name = "User"),
+        (name = "Cheatsheet")
     )
 )]
 pub struct ApiDoc;

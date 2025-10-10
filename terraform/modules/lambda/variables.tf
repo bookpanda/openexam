@@ -18,23 +18,22 @@ variable "queue_arn" {
   type        = string
 }
 
-variable "slides_table_name" {
-  description = "DynamoDB slides table name"
+variable "files_table_name" {
+  description = "DynamoDB files table name"
   type        = string
 }
 
-variable "slides_table_arn" {
-  description = "DynamoDB slides table ARN"
+variable "files_table_arn" {
+  description = "DynamoDB files table ARN"
   type        = string
 }
 
-variable "cheatsheets_table_name" {
-  description = "DynamoDB cheatsheets table name"
+variable "shares_table_name" {
+  description = "DynamoDB shares table name"
   type        = string
 }
 
-variable "cheatsheets_table_arn" {
-  description = "DynamoDB cheatsheets table ARN"
+variable "shares_table_arn" {
+  description = "DynamoDB shares table ARN"
   type        = string
 }
-

@@ -3,7 +3,6 @@ use crate::services::cheatsheet::CheatsheetService;
 use axum::extract::{Query, State};
 use axum::http::HeaderMap;
 use axum::response::IntoResponse;
-use serde::Deserialize;
 
 #[derive(Debug, Clone)]
 pub struct CheatsheetHandler {
@@ -18,7 +17,7 @@ impl CheatsheetHandler {
 
 #[utoipa::path(
     get,
-    path = "/api/cheatsheet/files/presign/upload",
+    path = "/api/cheatsheet/presigned/upload",
     tag = "Cheatsheet",
     params(
         ("filename" = String, Query, description = "Filename for the upload"),
@@ -49,7 +48,7 @@ pub async fn get_presigned_upload_url(
 
 #[utoipa::path(
     get,
-    path = "/api/cheatsheet/files/presign",
+    path = "/api/cheatsheet/presigned",
     tag = "Cheatsheet",
     params(
         ("key" = String, Query, description = "Full key in S3"),

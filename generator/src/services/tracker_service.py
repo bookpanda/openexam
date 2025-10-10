@@ -71,6 +71,9 @@ class TrackerService:
             table.put_item(Item=item)
             logger.info(f"Successfully tracked creation: {key}")
 
+            # Create share entry for the owner
+            self._create_owner_share(user_id, key, item_id)
+
         except ValueError as e:
             logger.error(f"Invalid key format: {str(e)}")
             raise
@@ -122,9 +125,14 @@ class TrackerService:
                 logger.warning(f"Item not found for deletion: {key}")
                 return
 
-            # Delete the item(s)
+            # Delete the item(s) and associated shares
             for item in items:
                 item_id = item["id"]
+
+                # Delete all shares associated with this file
+                self._delete_file_shares(item_id)
+
+                # Delete the file item
                 logger.info(f"Deleting item from {table_name}: {item_id}")
                 table.delete_item(Key={"id": item_id})
                 logger.info(f"Successfully deleted item: {item_id}")
@@ -201,3 +209,77 @@ class TrackerService:
         except ClientError as e:
             logger.warning(f"Could not get content type for {key}: {str(e)}")
             return "application/octet-stream"
+
+    def _create_owner_share(self, user_id: str, key: str, file_id: str) -> None:
+        """
+        Create a share entry for the file owner.
+
+        Args:
+            user_id: Owner's user ID
+            key: S3 object key
+            file_id: File ID from files table
+
+        Raises:
+            ClientError: If DynamoDB operation fails
+        """
+        try:
+            shares_table = self.dynamodb.Table(Config.SHARES_TABLE_NAME)
+
+            share_item = {
+                "userId": user_id,
+                "key": key,
+                "fileId": file_id,
+            }
+
+            logger.info(
+                f"Creating share entry for owner: userId={user_id}, fileId={file_id}"
+            )
+            shares_table.put_item(Item=share_item)
+            logger.info(f"Successfully created owner share for file: {file_id}")
+
+        except ClientError as e:
+            logger.error(f"Failed to create owner share: {str(e)}")
+            # Don't raise - we don't want to fail the file creation if share creation fails
+        except Exception as e:
+            logger.error(f"Unexpected error creating owner share: {str(e)}")
+
+    def _delete_file_shares(self, file_id: str) -> None:
+        """
+        Delete all share entries associated with a file.
+
+        Args:
+            file_id: File ID from files table
+
+        Raises:
+            ClientError: If DynamoDB operation fails
+        """
+        try:
+            shares_table = self.dynamodb.Table(Config.SHARES_TABLE_NAME)
+
+            # Query all shares for this file using GSI
+            logger.info(f"Querying shares for fileId={file_id}")
+            response = shares_table.query(
+                IndexName="FileIdIndex",
+                KeyConditionExpression="fileId = :fileId",
+                ExpressionAttributeValues={
+                    ":fileId": file_id,
+                },
+            )
+
+            shares = response.get("Items", [])
+            logger.info(f"Found {len(shares)} shares to delete for fileId={file_id}")
+
+            # Delete each share
+            for share in shares:
+                user_id = share["userId"]
+                key = share["key"]
+                logger.info(f"Deleting share: userId={user_id}, key={key}")
+                shares_table.delete_item(Key={"userId": user_id, "key": key})
+
+            logger.info(f"Successfully deleted all shares for file: {file_id}")
+
+        except ClientError as e:
+            logger.error(f"Failed to delete file shares: {str(e)}")
+            # Don't raise - we don't want to fail the file deletion if share deletion fails
+        except Exception as e:
+            logger.error(f"Unexpected error deleting file shares: {str(e)}")

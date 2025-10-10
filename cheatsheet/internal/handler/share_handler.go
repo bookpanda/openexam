@@ -17,8 +17,9 @@ func NewShareHandler(svc domain.ShareService) *ShareHandler {
 
 func (h *ShareHandler) Share(c *fiber.Ctx) error {
 	userId := c.FormValue("userId")
-	cheatsheetId := c.FormValue("cheatsheetId")
-	if err := h.svc.Share(c.Context(), userId, cheatsheetId); err != nil {
+	key := c.FormValue("key")
+	fileId := c.FormValue("fileId")
+	if err := h.svc.Share(c.Context(), userId, key, fileId); err != nil {
 		return httpx.FromDomainError(c, err)
 	}
 	return httpx.Ok(c, fiber.Map{"shared": true})
@@ -26,8 +27,8 @@ func (h *ShareHandler) Share(c *fiber.Ctx) error {
 
 func (h *ShareHandler) Unshare(c *fiber.Ctx) error {
 	userId := c.FormValue("userId")
-	cheatsheetId := c.FormValue("cheatsheetId")
-	if err := h.svc.Unshare(c.Context(), userId, cheatsheetId); err != nil {
+	key := c.FormValue("key")
+	if err := h.svc.Unshare(c.Context(), userId, key); err != nil {
 		return httpx.FromDomainError(c, err)
 	}
 	return httpx.Ok(c, fiber.Map{"unshared": true})

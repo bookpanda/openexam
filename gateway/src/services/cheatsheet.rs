@@ -143,7 +143,7 @@ impl CheatsheetService {
         }
     }
 
-    pub async fn get_all_files(&self, user_id: String) -> ApiResponse<types::EmptyResponse> {
+    pub async fn get_all_files(&self, user_id: String) -> ApiResponse<Vec<dtos::File>> {
         let url = format!("{}/files", self.cheatsheet_api_url);
 
         match reqwest::Client::new()
@@ -154,8 +154,32 @@ impl CheatsheetService {
         {
             Ok(response) => {
                 if response.status().is_success() {
-                    // TODO: Parse actual response
-                    ApiResponse::ok(types::EmptyResponse {})
+                    match response
+                        .json::<types::ServiceResponse<types::FilesData>>()
+                        .await
+                    {
+                        Ok(response_data) => ApiResponse::ok(
+                            response_data
+                                .data
+                                .files
+                                .into_iter()
+                                .map(|f| dtos::File {
+                                    id: f.ID,
+                                    user_id: f.UserID,
+                                    created_at: f.CreatedAt,
+                                    name: f.Name,
+                                    key: f.Key,
+                                })
+                                .collect(),
+                        ),
+                        Err(e) => {
+                            error!("Failed to parse files response: {:?}", e);
+                            ApiResponse::internal_error(&format!(
+                                "Failed to parse response: {:?}",
+                                e
+                            ))
+                        }
+                    }
                 } else {
                     let status = response.status();
                     error!("Failed to get files: status {}", status);

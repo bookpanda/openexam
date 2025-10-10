@@ -32,7 +32,7 @@ resource "aws_dynamodb_table" "shares" {
   name         = "${var.app_name}-shares"
   billing_mode = "PAY_PER_REQUEST"
   hash_key     = "userId"
-  range_key    = "cheatsheetId" # Sort key for composite primary key
+  range_key    = "key" # Sort key for composite primary key (S3 key)
 
   attribute {
     name = "userId"
@@ -40,13 +40,18 @@ resource "aws_dynamodb_table" "shares" {
   }
 
   attribute {
-    name = "cheatsheetId"
+    name = "key"
+    type = "S"
+  }
+
+  attribute {
+    name = "fileId"
     type = "S"
   }
 
   global_secondary_index {
-    name            = "CheatsheetIdIndex"
-    hash_key        = "cheatsheetId"
+    name            = "FileIdIndex"
+    hash_key        = "fileId"
     projection_type = "ALL"
   }
 

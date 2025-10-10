@@ -18,7 +18,7 @@ pub fn cheatsheet_routes() -> Router<CheatsheetHandler> {
         .route("/cheatsheet/files", delete(handlers::cheatsheet::remove))
         .route(
             "/cheatsheet/files", // get all my files (slides + cheatsheets)
-            get(handlers::cheatsheet::remove),
+            get(handlers::cheatsheet::get_all_files),
         )
     // .route(
     //     "/cheatsheet/files/presign",

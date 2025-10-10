@@ -11,8 +11,9 @@ resource "aws_lambda_function" "tracker" {
 
   environment {
     variables = {
-      BUCKET_NAME      = var.bucket_name
-      FILES_TABLE_NAME = var.files_table_name
+      BUCKET_NAME       = var.bucket_name
+      FILES_TABLE_NAME  = var.files_table_name
+      SHARES_TABLE_NAME = var.shares_table_name
     }
   }
 }

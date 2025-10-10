@@ -9,6 +9,7 @@ class Config:
 
     # DynamoDB Configuration
     FILES_TABLE_NAME: str = os.getenv("FILES_TABLE_NAME", "")
+    SHARES_TABLE_NAME: str = os.getenv("SHARES_TABLE_NAME", "")
 
     # Processing Configuration
     MAX_CONTENT_PREVIEW_CHARS: int = int(os.getenv("MAX_CONTENT_PREVIEW_CHARS", "500"))
@@ -27,3 +28,5 @@ class Config:
             raise ValueError("BUCKET_NAME environment variable is required")
         if not cls.FILES_TABLE_NAME:
             raise ValueError("FILES_TABLE_NAME environment variable is required")
+        if not cls.SHARES_TABLE_NAME:
+            raise ValueError("SHARES_TABLE_NAME environment variable is required")

@@ -23,3 +23,18 @@ pub struct GetPresignedGetUrlData {
     pub expiresIn: u64,
     pub url: String,
 }
+
+#[allow(non_snake_case)]
+#[derive(Debug, Deserialize)]
+pub struct File {
+    pub ID: String,
+    pub UserID: String,
+    pub CreatedAt: String,
+    pub Name: String,
+    pub Key: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct FilesData {
+    pub files: Vec<File>,
+}
