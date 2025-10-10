@@ -106,14 +106,15 @@ class TrackerService:
             table = self.dynamodb.Table(table_name)
 
             # Query by key using GSI to find the item
-            logger.info(f"Querying {table_name} for key={filename}")
+            logger.info(f"Querying {table_name} for key={key}")
             response = table.query(
                 IndexName="KeyIndex",
-                KeyConditionExpression="key = :key",
-                FilterExpression="userId = :userId",
+                KeyConditionExpression="#key = :key",
+                ExpressionAttributeNames={
+                    "#key": "key",
+                },
                 ExpressionAttributeValues={
-                    ":key": filename,
-                    ":userId": user_id,
+                    ":key": key,
                 },
             )
 
