@@ -11,6 +11,7 @@ type FileRepository interface {
 	Get(ctx context.Context, key string) (io.ReadCloser, int64, string, error)
 	Delete(ctx context.Context, key string) error
 	PresignGet(ctx context.Context, key string, ttl time.Duration) (string, error)
+	PresignPut(ctx context.Context, key string, ttl time.Duration) (string, error)
 }
 
 type FileService interface {
@@ -18,6 +19,7 @@ type FileService interface {
 	Download(ctx context.Context, key string) (io.ReadCloser, int64, string, error)
 	Remove(ctx context.Context, key string) error
 	GetPresignedURL(ctx context.Context, key string, ttl time.Duration) (string, error)
+	GetPresignedUploadURL(ctx context.Context, userId string, filename string, ttl time.Duration) (string, error)
 }
 
 type MetadataRepository interface {
