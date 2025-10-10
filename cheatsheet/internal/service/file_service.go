@@ -116,13 +116,13 @@ func (s *FileServiceImpl) GetPresignedURL(ctx context.Context, key string, ttl t
 	return s.repo.PresignGet(ctx, key, ttl)
 }
 
-func (s *FileServiceImpl) GetPresignedUploadURL(ctx context.Context, userId string, filename string, ttl time.Duration) (string, error) {
+func (s *FileServiceImpl) GetPresignedUploadURL(ctx context.Context, userId string, filename string, ttl time.Duration) (string, string, error) {
 	prefix := uuid.NewString()[0:6]
 	key := fmt.Sprintf("slides/%s/%s_%s", userId, prefix, filename)
 
 	result, err := s.repo.PresignPut(ctx, key, ttl)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
-	return result, nil
+	return result, key, nil
 }

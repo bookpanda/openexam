@@ -38,8 +38,52 @@ impl CheatsheetService {
             {
                 Ok(data) => {
                     let result = dtos::GetPresignedUploadUrlResponse {
-                        url: data.data.url,
                         expires_in: data.data.expiresIn.to_string(),
+                        url: data.data.url,
+                        key: data.data.key,
+                    };
+                    ApiResponse::ok(result)
+                }
+                Err(e) => {
+                    error!("Failed to parse presigned upload url response: {:?}", e);
+                    ApiResponse::internal_error(&format!(
+                        "Failed to parse presigned upload url response: {:?}",
+                        e
+                    ))
+                }
+            },
+            Err(e) => {
+                error!("Get presigned upload url error: {:?}", e);
+                ApiResponse::internal_error(&format!("Get presigned upload url error: {:?}", e))
+            }
+        }
+    }
+
+    pub async fn get_presigned_get_url(
+        &self,
+        key: String,
+        user_id: String,
+    ) -> ApiResponse<dtos::GetPresignedGetUrlResponse> {
+        let url = format!(
+            "{}/files/presign?key={}",
+            self.cheatsheet_api_url,
+            urlencoding::encode(&key)
+        );
+
+        match reqwest::Client::new()
+            .get(&url)
+            .header("X-User-Id", user_id)
+            .send()
+            .await
+        {
+            Ok(response) => match response
+                .json::<types::ServiceResponse<types::GetPresignedGetUrlData>>()
+                .await
+            {
+                Ok(data) => {
+                    let result = dtos::GetPresignedGetUrlResponse {
+                        expires_in: data.data.expiresIn.to_string(),
+                        url: data.data.url,
                     };
                     ApiResponse::ok(result)
                 }

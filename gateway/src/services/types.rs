@@ -11,4 +11,12 @@ pub struct ServiceResponse<T> {
 pub struct GetPresignedUploadUrlData {
     pub expiresIn: u64,
     pub url: String,
+    pub key: String,
+}
+
+#[allow(non_snake_case)]
+#[derive(Debug, Deserialize)]
+pub struct GetPresignedGetUrlData {
+    pub expiresIn: u64,
+    pub url: String,
 }

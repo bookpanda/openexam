@@ -98,9 +98,9 @@ func (h *FileHandler) GetPresignedUploadURL(c *fiber.Ctx) error {
 		return httpx.BadRequest(c, "userId and filename are required")
 	}
 
-	url, err := h.svc.GetPresignedUploadURL(context.Background(), userId, filename, 10*time.Minute)
+	url, key, err := h.svc.GetPresignedUploadURL(context.Background(), userId, filename, 10*time.Minute)
 	if err != nil {
 		return httpx.FromDomainError(c, err)
 	}
-	return httpx.Ok(c, fiber.Map{"url": url, "expiresIn": 600})
+	return httpx.Ok(c, fiber.Map{"url": url, "expiresIn": 600, "key": key})
 }
