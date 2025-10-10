@@ -1,28 +1,18 @@
 use log::error;
-use serde::Deserialize;
 
-use crate::{dtos, services::response::ApiResponse};
-
-#[derive(Deserialize)]
-struct PresignResponse {
-    success: bool,
-    data: PresignData,
-}
-
-#[derive(Deserialize)]
-struct PresignData {
-    url: String,
-    key: String,
-    #[serde(rename = "expiresIn")]
-    expires_in: i32,
-}
+use crate::{
+    dtos,
+    services::{response::ApiResponse, types},
+};
 
 #[derive(Debug, Clone)]
-pub struct CheatsheetService {}
+pub struct CheatsheetService {
+    cheatsheet_api_url: String,
+}
 
 impl CheatsheetService {
-    pub fn new() -> Self {
-        Self {}
+    pub fn new(cheatsheet_api_url: String) -> Self {
+        Self { cheatsheet_api_url }
     }
 
     pub async fn get_presigned_upload_url(
@@ -31,7 +21,8 @@ impl CheatsheetService {
         user_id: String,
     ) -> ApiResponse<dtos::GetPresignedUploadUrlResponse> {
         let url = format!(
-            "http://localhost:3000/files/presign?filename={}",
+            "{}/files/presign/upload?filename={}",
+            self.cheatsheet_api_url,
             urlencoding::encode(&filename)
         );
 
@@ -41,11 +32,14 @@ impl CheatsheetService {
             .send()
             .await
         {
-            Ok(response) => match response.json::<PresignResponse>().await {
+            Ok(response) => match response
+                .json::<types::ServiceResponse<types::GetPresignedUploadUrlData>>()
+                .await
+            {
                 Ok(data) => {
                     let result = dtos::GetPresignedUploadUrlResponse {
                         url: data.data.url,
-                        expires_in: data.data.expires_in.to_string(),
+                        expires_in: data.data.expiresIn.to_string(),
                     };
                     ApiResponse::ok(result)
                 }

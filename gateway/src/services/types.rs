@@ -1,14 +1,14 @@
 use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]
-struct ApiResponse<T> {
-    data: T,
-    success: bool,
+pub struct ServiceResponse<T> {
+    pub data: T,
+    pub success: bool,
 }
 
 #[allow(non_snake_case)]
 #[derive(Debug, Deserialize)]
-struct GetPresignedUploadUrlData {
-    expiresIn: u64,
-    url: String,
+pub struct GetPresignedUploadUrlData {
+    pub expiresIn: u64,
+    pub url: String,
 }
