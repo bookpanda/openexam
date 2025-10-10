@@ -8,6 +8,7 @@ class Config:
     TARGET_PREFIX: str = os.getenv("TARGET_PREFIX", "cheatsheets")
 
     # DynamoDB Configuration
+    SLIDES_TABLE_NAME: str = os.getenv("SLIDES_TABLE_NAME", "")
     CHEATSHEETS_TABLE_NAME: str = os.getenv("CHEATSHEETS_TABLE_NAME", "")
 
     # Processing Configuration
