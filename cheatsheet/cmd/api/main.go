@@ -11,7 +11,6 @@ import (
 	"storage/internal/app"
 	"storage/internal/config"
 	"storage/internal/handler"
-	"storage/internal/mq"
 	"storage/internal/repository"
 	"storage/internal/service"
 )
@@ -33,13 +32,13 @@ func main() {
 	metaRepo := repository.NewDynamoDBRepository(ddbClient, "cheatsheets", "shares")
 
 	// RabbitMQ
-	mqConn := mq.NewMQ()
-	defer mqConn.Conn.Close()
-	defer mqConn.Channel.Close()
-	pub := mq.NewPublisher(mqConn)
+	// mqConn := mq.NewMQ()
+	// defer mqConn.Conn.Close()
+	// defer mqConn.Channel.Close()
+	// pub := mq.NewPublisher(mqConn)
 
 	// Service + Handler
-	fileSvc := service.NewFileService(repo, metaRepo, pub, cfg.MaxUploadMB)
+	fileSvc := service.NewFileService(repo, metaRepo, cfg.MaxUploadMB)
 	fileHandler := handler.NewFileHandler(fileSvc)
 
 	shareSvc := service.NewShareService(metaRepo)
