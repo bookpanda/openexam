@@ -27,7 +27,7 @@ resource "aws_lambda_function" "s3_processor" {
 # Create Lambda deployment package from modular source
 data "archive_file" "lambda_zip" {
   type        = "zip"
-  source_dir  = "${path.root}/../cheatsheet-generator/src"
+  source_dir  = "${path.root}/../generator/src"
   output_path = "${path.module}/lambda_function.zip"
   excludes    = ["__pycache__", "*.pyc", "*.pyo", ".pytest_cache", ".mypy_cache"]
 }
