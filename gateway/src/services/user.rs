@@ -33,17 +33,14 @@ impl UserService {
             }
         }
     }
-    pub async fn login(
-        &self,
-        request: dtos::LoginRequestDto,
-    ) -> ApiResponse<dtos::LoginResponseDto> {
+    pub async fn login(&self, request: dtos::LoginRequest) -> ApiResponse<dtos::LoginResponse> {
         let mut client = (*self.user_client).clone();
         let request = LoginRequest { code: request.code };
 
         match client.login(request).await {
             Ok(response) => {
                 let response = response.into_inner();
-                ApiResponse::ok(dtos::LoginResponseDto {
+                ApiResponse::ok(dtos::LoginResponse {
                     id: response.id,
                     email: response.email,
                     name: response.name,
@@ -59,8 +56,8 @@ impl UserService {
 
     pub async fn validate_token(
         &self,
-        request: dtos::ValidateTokenRequestDto,
-    ) -> ApiResponse<dtos::ValidateTokenResponseDto> {
+        request: dtos::ValidateTokenRequest,
+    ) -> ApiResponse<dtos::ValidateTokenResponse> {
         let mut client = (*self.user_client).clone();
         let request = ValidateTokenRequest {
             token: request.token,
@@ -69,7 +66,7 @@ impl UserService {
         match client.validate_token(request).await {
             Ok(response) => {
                 let response = response.into_inner();
-                ApiResponse::ok(dtos::ValidateTokenResponseDto {
+                ApiResponse::ok(dtos::ValidateTokenResponse {
                     id: response.id,
                     email: response.email,
                     name: response.name,
