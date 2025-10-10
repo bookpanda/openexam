@@ -4,14 +4,22 @@
 
 -   gateway (rust): axum, tonic
 -   user (rust): tonic, postgres
--   cheatsheet (go): s3, dynamodb, rabbitmq
--   cheatsheet-generator (python): openai-api, rabbitmq
+-   cheatsheet (go): s3, dynamodb
+-   generator (python): lambda, openai-api
+    - flow: frontend -> s3 -> sqs -> generator -> s3 -> frontend
 -   frontend (typescript): nextjs, tailwindcss
 
 ## Getting Started
 
-### Running all serviceslocally via docker compose
+### Running all services locally
 this will run lastest images of all services
+1. Setup AWS infratstructure
+```bash
+cd terraform
+terraform init
+terraform apply
+# this will generate envs: access_key_id, secret_access_key, bucket_name
+```
 1. pull images used in `docker-compose.yml`
 ```bash
 # amd64 e.g. x86_64 (force pulling amd64 images on apple silicon)
