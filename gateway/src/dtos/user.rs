@@ -2,12 +2,12 @@ use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
 #[derive(Deserialize, Serialize, ToSchema)]
-pub struct LoginRequestDto {
+pub struct LoginRequest {
     pub code: String,
 }
 
 #[derive(Deserialize, Serialize, ToSchema)]
-pub struct LoginResponseDto {
+pub struct LoginResponse {
     pub id: String,
     pub email: String,
     pub name: String,
@@ -15,12 +15,12 @@ pub struct LoginResponseDto {
 }
 
 #[derive(Deserialize, Serialize, ToSchema)]
-pub struct ValidateTokenRequestDto {
+pub struct ValidateTokenRequest {
     pub token: String,
 }
 
 #[derive(Deserialize, Serialize, ToSchema)]
-pub struct ValidateTokenResponseDto {
+pub struct ValidateTokenResponse {
     pub id: String,
     pub email: String,
     pub name: String,
