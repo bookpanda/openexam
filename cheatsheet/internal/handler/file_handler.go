@@ -66,12 +66,14 @@ func (h *FileHandler) Download(c *fiber.Ctx) error {
 }
 
 func (h *FileHandler) Remove(c *fiber.Ctx) error {
-	key := c.Query("key")
-	if key == "" {
-		return httpx.BadRequest(c, "key is required")
+	fileType := c.Query("file_type")
+	userId := c.Query("user_id")
+	file := c.Query("file")
+	if fileType == "" || userId == "" || file == "" {
+		return httpx.BadRequest(c, "file_type, user_id and file are required")
 	}
 
-	if err := h.svc.Remove(c.Context(), key); err != nil {
+	if err := h.svc.Remove(c.Context(), fileType, userId, file); err != nil {
 		return httpx.FromDomainError(c, err)
 	}
 	return httpx.Ok(c, fiber.Map{"deleted": true})

@@ -101,4 +101,71 @@ impl CheatsheetService {
             }
         }
     }
+
+    pub async fn remove_file(
+        &self,
+        file_type: String,
+        file: String,
+        user_id: String,
+    ) -> ApiResponse<types::EmptyResponse> {
+        // // Construct the key as: {file_type}/{user_id}/{file}
+        // let key = format!("{}/{}/{}", file_type, user_id, file);
+        let url = format!("{}/files", self.cheatsheet_api_url);
+        // println!("Removing file: {}", key);
+
+        match reqwest::Client::new()
+            .delete(&url)
+            .header("X-User-Id", user_id.to_string())
+            .query(&[
+                ("file_type", file_type),
+                ("user_id", user_id),
+                ("file", file),
+            ])
+            .send()
+            .await
+        {
+            Ok(response) => {
+                if response.status().is_success() {
+                    ApiResponse::ok(types::EmptyResponse {})
+                } else {
+                    let status = response.status();
+                    error!("Failed to delete file: status {}", status);
+                    ApiResponse::internal_error(&format!(
+                        "Failed to delete file: status {}",
+                        status
+                    ))
+                }
+            }
+            Err(e) => {
+                error!("Delete file error: {:?}", e);
+                ApiResponse::internal_error(&format!("Delete file error: {:?}", e))
+            }
+        }
+    }
+
+    pub async fn get_all_files(&self, user_id: String) -> ApiResponse<types::EmptyResponse> {
+        let url = format!("{}/files", self.cheatsheet_api_url);
+
+        match reqwest::Client::new()
+            .get(&url)
+            .header("X-User-Id", user_id)
+            .send()
+            .await
+        {
+            Ok(response) => {
+                if response.status().is_success() {
+                    // TODO: Parse actual response
+                    ApiResponse::ok(types::EmptyResponse {})
+                } else {
+                    let status = response.status();
+                    error!("Failed to get files: status {}", status);
+                    ApiResponse::internal_error(&format!("Failed to get files: status {}", status))
+                }
+            }
+            Err(e) => {
+                error!("Get files error: {:?}", e);
+                ApiResponse::internal_error(&format!("Get files error: {:?}", e))
+            }
+        }
+    }
 }

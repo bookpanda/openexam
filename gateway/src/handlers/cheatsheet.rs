@@ -1,4 +1,4 @@
-use crate::dtos;
+use crate::dtos::{self, PresignGetQuery, PresignUploadQuery, RemoveFileQuery};
 use crate::services::cheatsheet::CheatsheetService;
 use axum::extract::{Query, State};
 use axum::http::HeaderMap;
@@ -14,11 +14,6 @@ impl CheatsheetHandler {
     pub fn new(cheatsheet_service: CheatsheetService) -> Self {
         Self { cheatsheet_service }
     }
-}
-
-#[derive(Deserialize)]
-pub struct PresignUploadQuery {
-    pub filename: String,
 }
 
 #[utoipa::path(
@@ -39,7 +34,6 @@ pub async fn get_presigned_upload_url(
     Query(query): Query<PresignUploadQuery>,
     headers: HeaderMap,
 ) -> impl IntoResponse {
-    // Get user_id from header
     let user_id = headers
         .get("X-User-Id")
         .and_then(|v| v.to_str().ok())
@@ -51,11 +45,6 @@ pub async fn get_presigned_upload_url(
         .get_presigned_upload_url(query.filename, user_id)
         .await
         .into_axum_response()
-}
-
-#[derive(Deserialize)]
-pub struct PresignGetQuery {
-    pub key: String,
 }
 
 #[utoipa::path(
@@ -76,7 +65,6 @@ pub async fn get_presigned_get_url(
     Query(query): Query<PresignGetQuery>,
     headers: HeaderMap,
 ) -> impl IntoResponse {
-    // Get user_id from header
     let user_id = headers
         .get("X-User-Id")
         .and_then(|v| v.to_str().ok())
@@ -86,6 +74,64 @@ pub async fn get_presigned_get_url(
     handler
         .cheatsheet_service
         .get_presigned_get_url(query.key, user_id)
+        .await
+        .into_axum_response()
+}
+
+#[utoipa::path(
+    delete,
+    path = "/api/cheatsheet/files",
+    tag = "Cheatsheet",
+    params(
+        ("file_type" = String, Query, description = "File type (slide or cheatsheet)"),
+        ("file" = String, Query, description = "Filename to delete"),
+    ),
+    responses(
+        (status = 200, description = "File deleted successfully"),
+        (status = 404, description = "File not found"),
+        (status = 500, description = "Internal server error"),
+    ),
+)]
+pub async fn remove(
+    State(handler): State<CheatsheetHandler>,
+    Query(query): Query<RemoveFileQuery>,
+    headers: HeaderMap,
+) -> impl IntoResponse {
+    let user_id = headers
+        .get("X-User-Id")
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("")
+        .to_string();
+
+    handler
+        .cheatsheet_service
+        .remove_file(query.file_type.to_string(), query.file, user_id)
+        .await
+        .into_axum_response()
+}
+
+#[utoipa::path(
+    get,
+    path = "/api/cheatsheet/files",
+    tag = "Cheatsheet",
+    responses(
+        (status = 200, description = "List of all user files"),
+        (status = 500, description = "Internal server error"),
+    ),
+)]
+pub async fn get_all_files(
+    State(handler): State<CheatsheetHandler>,
+    headers: HeaderMap,
+) -> impl IntoResponse {
+    let user_id = headers
+        .get("X-User-Id")
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("")
+        .to_string();
+
+    handler
+        .cheatsheet_service
+        .get_all_files(user_id)
         .await
         .into_axum_response()
 }

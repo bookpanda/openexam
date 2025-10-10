@@ -1,10 +1,13 @@
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize)]
 pub struct ServiceResponse<T> {
     pub data: T,
     pub success: bool,
 }
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct EmptyResponse {}
 
 #[allow(non_snake_case)]
 #[derive(Debug, Deserialize)]

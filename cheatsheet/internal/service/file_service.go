@@ -76,19 +76,20 @@ func (s *FileServiceImpl) Download(ctx context.Context, key string) (io.ReadClos
 	return s.repo.Get(ctx, key)
 }
 
-func (s *FileServiceImpl) Remove(ctx context.Context, key string) error {
+func (s *FileServiceImpl) Remove(ctx context.Context, fileType string, userId string, file string) error {
+	key := fmt.Sprintf("%s/%s/%s", fileType, userId, file)
+	if fileType == "cheatsheets" {
+		// Find cheatsheet from key before delete shares
 
-	// "slides/6531319021/676c8c_Ceph-Storage-Interface.png" → "676c8c_Ceph-Storage-Interface.png"
-	parts := strings.SplitN(key, "/", 3)
-	if len(parts) != 3 {
-		return fmt.Errorf("invalid key format (type/userId/filename): %s", key)
-	}
-	metaKey := parts[2]
+		cheatsheet, err := s.metaRepo.FindCheatsheetByKey(ctx, key)
+		if err != nil {
+			return err
+		}
 
-	// Find cheatsheet from key before delete shares
-	cheatsheet, err := s.metaRepo.FindCheatsheetByKey(ctx, metaKey)
-	if err != nil {
-		return err
+		// delete metadata shares
+		if err := s.metaRepo.DeleteSharesByCheatsheetID(ctx, cheatsheet.ID); err != nil {
+			return err
+		}
 	}
 
 	// delete file from S3
@@ -96,19 +97,6 @@ func (s *FileServiceImpl) Remove(ctx context.Context, key string) error {
 		return err
 	}
 
-	// delete metadata cheatsheet by key (not usrId/key)
-	// if err := s.metaRepo.DeleteCheatsheetByKey(ctx, metaKey); err != nil {
-	// 	return err
-	// }
-	// delete metadata cheatsheet
-	// if err := s.metaRepo.DeleteCheatsheet(ctx, cheatsheet.ID); err != nil {
-	// 	return err
-	// }
-
-	// delete metadata shares
-	if err := s.metaRepo.DeleteSharesByCheatsheetID(ctx, cheatsheet.ID); err != nil {
-		return err
-	}
 	return nil
 }
 

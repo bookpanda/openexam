@@ -1,6 +1,9 @@
 use crate::handlers;
 use crate::handlers::cheatsheet::CheatsheetHandler;
-use axum::{Router, routing::get};
+use axum::{
+    Router,
+    routing::{delete, get},
+};
 
 pub fn cheatsheet_routes() -> Router<CheatsheetHandler> {
     Router::new()
@@ -12,7 +15,11 @@ pub fn cheatsheet_routes() -> Router<CheatsheetHandler> {
             "/cheatsheet/presigned",
             get(handlers::cheatsheet::get_presigned_get_url),
         )
-    // .route("/cheatsheet/files", delete(handlers::cheatsheet::remove))
+        .route("/cheatsheet/files", delete(handlers::cheatsheet::remove))
+        .route(
+            "/cheatsheet/files", // get all my files (slides + cheatsheets)
+            get(handlers::cheatsheet::remove),
+        )
     // .route(
     //     "/cheatsheet/files/presign",
     //     get(handlers::cheatsheet::get_presigned_url),
