@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"storage/internal/domain"
-	"storage/internal/mq"
 
 	"github.com/google/uuid"
 )
@@ -19,14 +18,14 @@ type FileServiceImpl struct {
 	repo        domain.FileRepository     // S3
 	metaRepo    domain.MetadataRepository // DynamoDB
 	maxUploadMB int64
-	publisher   *mq.Publisher
+	// publisher   *mq.Publisher
 }
 
-func NewFileService(repo domain.FileRepository, metaRepo domain.MetadataRepository, publisher *mq.Publisher, maxUploadMB int64) domain.FileService {
+func NewFileService(repo domain.FileRepository, metaRepo domain.MetadataRepository, maxUploadMB int64) domain.FileService {
 	return &FileServiceImpl{
-		repo:        repo,
-		metaRepo:    metaRepo,
-		publisher:   publisher,
+		repo:     repo,
+		metaRepo: metaRepo,
+		// publisher:   publisher,
 		maxUploadMB: maxUploadMB,
 	}
 }
@@ -45,7 +44,7 @@ func (s *FileServiceImpl) Upload(ctx context.Context, userId, filename string, c
 	}
 	// Generate a safe and unique key name
 	prefix := uuid.NewString()[0:6]
-	key := fmt.Sprintf("%s/cheatsheets/%s_%s", userId, prefix, filename)
+	key := fmt.Sprintf("cheatsheets/%s/%s_%s", userId, prefix, filename)
 
 	if err := s.repo.Put(ctx, key, content, size, contentType); err != nil {
 		return domain.FileObject{}, err
@@ -119,14 +118,11 @@ func (s *FileServiceImpl) GetPresignedURL(ctx context.Context, key string, ttl t
 
 func (s *FileServiceImpl) GetPresignedUploadURL(ctx context.Context, userId string, filename string, ttl time.Duration) (string, error) {
 	prefix := uuid.NewString()[0:6]
-	key := fmt.Sprintf("%s/slides/%s_%s", userId, prefix, filename)
+	key := fmt.Sprintf("slides/%s/%s_%s", userId, prefix, filename)
 
-	// Publish event
-	_ = s.publisher.Publish("file.upload", map[string]interface{}{
-		"userId": userId,
-		"key":    key,
-		"name":   filename,
-	})
-
-	return s.repo.PresignPut(ctx, key, ttl)
+	result, err := s.repo.PresignPut(ctx, key, ttl)
+	if err != nil {
+		return "", err
+	}
+	return result, nil
 }
