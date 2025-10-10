@@ -49,8 +49,7 @@ class TrackerService:
             content_type = self._get_content_type(bucket, key)
 
             # Determine which table to use
-            table_name = self._get_table_name(file_type)
-            table = self.dynamodb.Table(table_name)
+            table = self.dynamodb.Table(Config.FILES_TABLE_NAME)
 
             # Generate unique ID
             item_id = str(uuid.uuid4())
@@ -68,7 +67,7 @@ class TrackerService:
                 "updatedAt": timestamp,
             }
 
-            logger.info(f"Creating item in {table_name}: {item_id}")
+            logger.info(f"Creating item in {Config.FILES_TABLE_NAME}: {item_id}")
             table.put_item(Item=item)
             logger.info(f"Successfully tracked creation: {key}")
 
@@ -102,7 +101,7 @@ class TrackerService:
             )
 
             # Determine which table to use
-            table_name = self._get_table_name(file_type)
+            table_name = Config.FILES_TABLE_NAME
             table = self.dynamodb.Table(table_name)
 
             # Query by key using GSI to find the item
@@ -182,30 +181,6 @@ class TrackerService:
             raise ValueError(f"Missing filename in key: {key}")
 
         return file_type, user_id, filename
-
-    def _get_table_name(self, file_type: str) -> str:
-        """
-        Get DynamoDB table name based on file type.
-
-        Args:
-            file_type: "slides" or "cheatsheets"
-
-        Returns:
-            Table name
-
-        Raises:
-            ValueError: If SLIDES_TABLE_NAME is not configured
-        """
-        if file_type == "slides":
-            if not Config.SLIDES_TABLE_NAME:
-                raise ValueError("SLIDES_TABLE_NAME environment variable is required")
-            return Config.SLIDES_TABLE_NAME
-        else:  # cheatsheets
-            if not Config.CHEATSHEETS_TABLE_NAME:
-                raise ValueError(
-                    "CHEATSHEETS_TABLE_NAME environment variable is required"
-                )
-            return Config.CHEATSHEETS_TABLE_NAME
 
     def _get_content_type(self, bucket: str, key: str) -> str:
         """

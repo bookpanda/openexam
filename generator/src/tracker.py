@@ -55,10 +55,6 @@ def handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
         # Validate configuration
         Config.validate()
 
-        # Additional validation for tracker-specific config
-        if not Config.SLIDES_TABLE_NAME:
-            logger.warning("SLIDES_TABLE_NAME not configured")
-
         # Process S3 events
         s3_handler = S3Handler()
         return s3_handler.handle_event(event)

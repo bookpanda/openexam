@@ -14,8 +14,7 @@ resource "aws_lambda_function" "generator" {
       BUCKET_NAME               = var.bucket_name
       SOURCE_PREFIX             = "slide"
       TARGET_PREFIX             = "cheatsheets"
-      SLIDES_TABLE_NAME         = var.slides_table_name
-      CHEATSHEETS_TABLE_NAME    = var.cheatsheets_table_name
+      FILES_TABLE_NAME          = var.files_table_name
       MAX_CONTENT_PREVIEW_CHARS = "500"
       MAX_BINARY_PREVIEW_BYTES  = "100"
     }

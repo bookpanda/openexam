@@ -23,9 +23,6 @@ output "queue_name" {
 output "queue_url" {
   value = module.sqs.queue_url
 }
-output "cheatsheets_table_name" {
-  value = module.dynamodb.cheatsheets_table_name
-}
 
 output "shares_table_name" {
   value = module.dynamodb.shares_table_name

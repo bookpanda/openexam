@@ -61,10 +61,8 @@ resource "aws_iam_role_policy" "lambda_sqs_s3_dynamodb_policy" {
           "dynamodb:DeleteItem"
         ]
         Resource = [
-          var.cheatsheets_table_arn,
-          "${var.cheatsheets_table_arn}/index/*",
-          var.slides_table_arn,
-          "${var.slides_table_arn}/index/*"
+          var.files_table_arn,
+          "${var.files_table_arn}/index/*",
         ]
       },
       {
