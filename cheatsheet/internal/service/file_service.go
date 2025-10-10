@@ -51,16 +51,16 @@ func (s *FileServiceImpl) Upload(ctx context.Context, userId, filename string, c
 	}
 
 	// Save metadata
-	cheatsheet := domain.Cheatsheet{
-		ID:        uuid.NewString(),
-		UserID:    userId,
-		CreatedAt: time.Now(),
-		Name:      filename,
-		Key:       fmt.Sprintf("%s_%s", prefix, filename), //key
-	}
-	if err := s.metaRepo.SaveCheatsheet(ctx, cheatsheet); err != nil {
-		return domain.FileObject{}, err
-	}
+	// cheatsheet := domain.Cheatsheet{
+	// 	ID:        uuid.NewString(),
+	// 	UserID:    userId,
+	// 	CreatedAt: time.Now(),
+	// 	Name:      filename,
+	// 	Key:       fmt.Sprintf("%s_%s", prefix, filename), //key
+	// }
+	// if err := s.metaRepo.SaveCheatsheet(ctx, cheatsheet); err != nil {
+	// 	return domain.FileObject{}, err
+	// }
 
 	// Build file object
 	fileObj := domain.FileObject{
@@ -78,12 +78,12 @@ func (s *FileServiceImpl) Download(ctx context.Context, key string) (io.ReadClos
 
 func (s *FileServiceImpl) Remove(ctx context.Context, key string) error {
 
-	// "6531319021/676c8c_Ceph-Storage-Interface.png" → "676c8c_Ceph-Storage-Interface.png"
-	parts := strings.SplitN(key, "/", 2)
-	metaKey := key
-	if len(parts) == 2 {
-		metaKey = parts[1]
+	// "slides/6531319021/676c8c_Ceph-Storage-Interface.png" → "676c8c_Ceph-Storage-Interface.png"
+	parts := strings.SplitN(key, "/", 3)
+	if len(parts) != 3 {
+		return fmt.Errorf("invalid key format (type/userId/filename): %s", key)
 	}
+	metaKey := parts[2]
 
 	// Find cheatsheet from key before delete shares
 	cheatsheet, err := s.metaRepo.FindCheatsheetByKey(ctx, metaKey)
@@ -101,9 +101,9 @@ func (s *FileServiceImpl) Remove(ctx context.Context, key string) error {
 	// 	return err
 	// }
 	// delete metadata cheatsheet
-	if err := s.metaRepo.DeleteCheatsheet(ctx, cheatsheet.ID); err != nil {
-		return err
-	}
+	// if err := s.metaRepo.DeleteCheatsheet(ctx, cheatsheet.ID); err != nil {
+	// 	return err
+	// }
 
 	// delete metadata shares
 	if err := s.metaRepo.DeleteSharesByCheatsheetID(ctx, cheatsheet.ID); err != nil {

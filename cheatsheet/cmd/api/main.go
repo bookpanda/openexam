@@ -29,7 +29,7 @@ func main() {
 
 	// DynamoDB
 	ddbClient := dynamodb.NewFromConfig(cfg.AwsCfg)
-	metaRepo := repository.NewDynamoDBRepository(ddbClient, "cheatsheets", "shares")
+	metaRepo := repository.NewDynamoDBRepository(ddbClient, &cfg.DynamoDB)
 
 	// RabbitMQ
 	// mqConn := mq.NewMQ()

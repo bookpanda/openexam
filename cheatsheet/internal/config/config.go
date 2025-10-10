@@ -16,6 +16,13 @@ type AppConfig struct {
 	Bucket      string
 	MaxUploadMB int64
 	AwsCfg      aws.Config
+	DynamoDB    DynamoDBConfig
+}
+
+type DynamoDBConfig struct {
+	SlidesTable      string
+	CheatsheetsTable string
+	SharesTable      string
 }
 
 func Load() AppConfig {
@@ -38,6 +45,11 @@ func Load() AppConfig {
 		Bucket:      bucket,
 		MaxUploadMB: maxMB,
 		AwsCfg:      awsCfg,
+		DynamoDB: DynamoDBConfig{
+			SlidesTable:      getEnv("SLIDES_TABLE", "openexam-slides"),
+			CheatsheetsTable: getEnv("CHEATSHEETS_TABLE", "openexam-cheatsheets"),
+			SharesTable:      getEnv("SHARES_TABLE", "openexam-shares"),
+		},
 	}
 }
 
