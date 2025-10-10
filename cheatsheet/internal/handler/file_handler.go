@@ -90,3 +90,17 @@ func (h *FileHandler) GetPresignedURL(c *fiber.Ctx) error {
 	}
 	return httpx.Ok(c, fiber.Map{"url": url, "expiresIn": 600})
 }
+
+func (h *FileHandler) GetPresignedUploadURL(c *fiber.Ctx) error {
+	userId := c.Get("X-User-Id")
+	filename := c.Query("filename")
+	if userId == "" || filename == "" {
+		return httpx.BadRequest(c, "userId and filename are required")
+	}
+
+	url, err := h.svc.GetPresignedUploadURL(context.Background(), userId, filename, 10*time.Minute)
+	if err != nil {
+		return httpx.FromDomainError(c, err)
+	}
+	return httpx.Ok(c, fiber.Map{"url": url, "expiresIn": 600})
+}
