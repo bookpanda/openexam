@@ -1,6 +1,9 @@
+use crate::handlers::cheatsheet::CheatsheetHandler;
 use crate::handlers::user::UserHandler;
 use crate::proto::user::user_client::UserClient;
 use crate::routes::auth::auth_routes;
+use crate::routes::cheatsheet::cheatsheet_routes;
+use crate::services::cheatsheet::CheatsheetService;
 use crate::services::user::UserService;
 use axum::Router;
 use std::net::SocketAddr;
@@ -25,6 +28,9 @@ async fn main() -> anyhow::Result<()> {
     let user_service = UserService::new(user_client);
     let user_handler = UserHandler::new(user_service);
 
+    let cheatsheet_service = CheatsheetService::new();
+    let cheatsheet_handler = CheatsheetHandler::new(cheatsheet_service);
+
     let cors = tower_http::cors::CorsLayer::new()
         .allow_headers(Any)
         .allow_methods(Any)
@@ -32,6 +38,7 @@ async fn main() -> anyhow::Result<()> {
 
     let mut app = Router::new()
         .nest("/api", auth_routes().with_state(user_handler))
+        .nest("/api", cheatsheet_routes().with_state(cheatsheet_handler))
         .layer(cors);
 
     if config.app.debug {
