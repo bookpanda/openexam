@@ -2,7 +2,7 @@ use crate::dtos;
 use crate::services::cheatsheet::CheatsheetService;
 use axum::extract::{Query, State};
 use axum::http::HeaderMap;
-use axum::{Json, response::IntoResponse};
+use axum::response::IntoResponse;
 use serde::Deserialize;
 
 #[derive(Debug, Clone)]
