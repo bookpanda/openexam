@@ -3,7 +3,7 @@ resource "aws_lambda_function" "s3_processor" {
   filename         = data.archive_file.lambda_zip.output_path
   function_name    = "${var.app_name}-s3-processor"
   role             = aws_iam_role.lambda_role.arn
-  handler          = "lambda_function.handler"
+  handler          = "main.handler"
   source_code_hash = data.archive_file.lambda_zip.output_base64sha256
   runtime          = "python3.12"
   timeout          = 60
@@ -11,7 +11,11 @@ resource "aws_lambda_function" "s3_processor" {
 
   environment {
     variables = {
-      BUCKET_NAME = var.bucket_name
+      BUCKET_NAME               = var.bucket_name
+      SOURCE_PREFIX             = "slide"
+      TARGET_PREFIX             = "cheatsheets"
+      MAX_CONTENT_PREVIEW_CHARS = "500"
+      MAX_BINARY_PREVIEW_BYTES  = "100"
     }
   }
 
@@ -20,11 +24,12 @@ resource "aws_lambda_function" "s3_processor" {
   }
 }
 
-# Create Lambda deployment package
+# Create Lambda deployment package from modular source
 data "archive_file" "lambda_zip" {
   type        = "zip"
-  source_file = "${path.module}/lambda_function.py"
+  source_dir  = "${path.root}/../cheatsheet-generator/src"
   output_path = "${path.module}/lambda_function.zip"
+  excludes    = ["__pycache__", "*.pyc", "*.pyo", ".pytest_cache", ".mypy_cache"]
 }
 
 # IAM role for Lambda
