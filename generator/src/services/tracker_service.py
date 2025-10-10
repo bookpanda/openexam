@@ -59,12 +59,11 @@ class TrackerService:
             # Create item
             item = {
                 "id": item_id,
-                "key": filename,  # Just the filename
+                "key": key,  # Full S3 key for reference
                 "name": filename,
                 "userId": user_id,
                 "size": size,
                 "contentType": content_type,
-                "s3Key": key,  # Full S3 key for reference
                 "createdAt": timestamp,
                 "updatedAt": timestamp,
             }
