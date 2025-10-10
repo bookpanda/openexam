@@ -11,6 +11,11 @@ module "sqs" {
   bucket_id   = module.s3.bucket_id
 }
 
+module "dynamodb" {
+  source   = "./modules/dynamodb"
+  app_name = var.app_name
+}
+
 module "lambda" {
   source      = "./modules/lambda"
   app_name    = var.app_name

@@ -31,3 +31,15 @@ output "lambda_function_name" {
 output "lambda_function_arn" {
   value = module.lambda.lambda_function_arn
 }
+
+output "cheatsheets_table_name" {
+  value = module.dynamodb.cheatsheets_table_name
+}
+
+output "shares_table_name" {
+  value = module.dynamodb.shares_table_name
+}
+
+output "dynamodb_policy_arn" {
+  value = module.dynamodb.dynamodb_policy_arn
+}
