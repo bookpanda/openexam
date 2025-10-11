@@ -155,3 +155,26 @@ pub async fn unshare(
         .await
         .into_axum_response()
 }
+
+#[utoipa::path(
+    post,
+    path = "/api/cheatsheet/generate",
+    tag = "Cheatsheet",
+    request_body = dtos::GenerateRequest,
+    responses(
+        (status = 200, description = "Generation request accepted", body = dtos::GenerateResponse),
+        (status = 400, description = "Bad request"),
+        (status = 500, description = "Internal server error"),
+    ),
+)]
+pub async fn generate(
+    State(handler): State<CheatsheetHandler>,
+    UserId(user_id): UserId,
+    Json(body): Json<dtos::GenerateRequest>,
+) -> impl IntoResponse {
+    handler
+        .cheatsheet_service
+        .generate(body.file_ids, user_id)
+        .await
+        .into_axum_response()
+}

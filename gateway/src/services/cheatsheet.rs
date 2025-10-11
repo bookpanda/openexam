@@ -234,4 +234,34 @@ impl CheatsheetService {
             unshared: data.data.unshared,
         })
     }
+
+    pub async fn generate(
+        &self,
+        file_ids: Vec<String>,
+        user_id: String,
+    ) -> ApiResponse<dtos::GenerateResponse> {
+        let url = format!("{}/generate", self.cheatsheet_api_url);
+
+        let body = serde_json::json!({
+            "file_ids": file_ids,
+        });
+
+        let request = self
+            .client
+            .post(&url)
+            .json(&body)
+            .header("X-User-Id", user_id);
+        let response = match self.send_request(request).await {
+            Ok(r) => r,
+            Err(e) => return ApiResponse::internal_error(&e),
+        };
+
+        let data: types::ServiceResponse<dtos::GenerateResponse> =
+            match self.parse_json(response).await {
+                Ok(d) => d,
+                Err((status, msg)) => return ApiResponse::error(status, &msg),
+            };
+
+        ApiResponse::ok(data.data)
+    }
 }

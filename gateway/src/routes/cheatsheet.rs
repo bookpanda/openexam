@@ -22,4 +22,5 @@ pub fn cheatsheet_routes() -> Router<CheatsheetHandler> {
         )
         .route("/cheatsheet/share", post(handlers::cheatsheet::share))
         .route("/cheatsheet/unshare", post(handlers::cheatsheet::unshare))
+        .route("/cheatsheet/generate", post(handlers::cheatsheet::generate))
 }

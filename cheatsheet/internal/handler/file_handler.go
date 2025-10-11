@@ -8,6 +8,7 @@ import (
 	"storage/pkg/httpx"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/google/uuid"
 )
 
 type FileHandler struct {
@@ -16,37 +17,45 @@ type FileHandler struct {
 
 func NewFileHandler(svc domain.FileService) *FileHandler { return &FileHandler{svc: svc} }
 
+type GenerateRequest struct {
+	FileIDs []string `json:"file_ids" validate:"required"`
+}
+
 func (h *FileHandler) Generate(c *fiber.Ctx) error {
-	fileHeader, err := c.FormFile("file")
-	if err != nil {
-		return httpx.BadRequest(c, "file is required")
+	var req GenerateRequest
+	if err := c.BodyParser(&req); err != nil {
+		return httpx.BadRequest(c, "invalid request body")
 	}
 
-	f, err := fileHeader.Open()
-	if err != nil {
-		return httpx.Internal(c, err)
+	if len(req.FileIDs) == 0 {
+		return httpx.BadRequest(c, "file_ids is required")
 	}
-	defer f.Close()
 
 	userId := c.Get("X-User-Id")
-	//userId := c.Query("userId")
-	if userId == "" {
-		userId = "6531319021" // dev/test
-	}
-
-	obj, err := h.svc.Upload(
-		c.Context(),
-		userId,
-		fileHeader.Filename,
-		f,
-		fileHeader.Size,
-		fileHeader.Header.Get("Content-Type"),
-	)
+	files, err := h.svc.GetAllFiles(c.Context(), userId)
 	if err != nil {
 		return httpx.FromDomainError(c, err)
 	}
 
-	return httpx.Ok(c, fiber.Map{"key": obj.Key, "size": obj.Size, "contentType": obj.ContentType})
+	hasFileAcess := map[string]bool{}
+	for _, file := range files {
+		hasFileAcess[file.Key] = true
+	}
+
+	for _, fileID := range req.FileIDs {
+		if !hasFileAcess[fileID] {
+			return httpx.BadRequest(c, "user does not have access to file: "+fileID)
+		}
+	}
+
+	// 3. Call SQS with fileIds and userId
+	fileID := uuid.New().String()
+	key := uuid.New().String()
+
+	return httpx.Ok(c, fiber.Map{
+		"file_id": fileID,
+		"key":     key,
+	})
 }
 
 func (h *FileHandler) Remove(c *fiber.Ctx) error {
@@ -76,7 +85,6 @@ func (h *FileHandler) GetAllFiles(c *fiber.Ctx) error {
 }
 
 func (h *FileHandler) GetPresignedURL(c *fiber.Ctx) error {
-	// key := c.Params("key")
 	key := c.Query("key")
 	if key == "" {
 		return httpx.BadRequest(c, "key is required")

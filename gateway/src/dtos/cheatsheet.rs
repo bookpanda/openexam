@@ -86,3 +86,14 @@ pub struct UnshareRequest {
 pub struct UnshareResponse {
     pub unshared: bool,
 }
+
+#[derive(Deserialize, Serialize, ToSchema)]
+pub struct GenerateRequest {
+    pub file_ids: Vec<String>,
+}
+
+#[derive(Deserialize, Serialize, ToSchema)]
+pub struct GenerateResponse {
+    pub file_id: String,
+    pub key: String,
+}

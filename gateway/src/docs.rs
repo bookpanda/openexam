@@ -16,6 +16,7 @@ use utoipa::{
         crate::handlers::cheatsheet::get_all_files,
         crate::handlers::cheatsheet::share,
         crate::handlers::cheatsheet::unshare,
+        crate::handlers::cheatsheet::generate,
     ),
     components(schemas(
         crate::dtos::ValidateTokenRequest,
@@ -29,6 +30,8 @@ use utoipa::{
         crate::dtos::ShareResponse,
         crate::dtos::UnshareRequest,
         crate::dtos::UnshareResponse,
+        crate::dtos::GenerateRequest,
+        crate::dtos::GenerateResponse,
     )),
     info(
         title = "openexam",
