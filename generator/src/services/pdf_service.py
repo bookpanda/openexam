@@ -6,7 +6,7 @@ import io
 import logging
 from typing import List
 
-from pypdf import PdfMerger, PdfReader
+from pypdf import PdfReader, PdfWriter
 
 from utils.logger import setup_logger
 
@@ -31,19 +31,22 @@ class PDFService:
             Exception: If PDF merging fails
         """
         try:
-            merger = PdfMerger()
+            writer = PdfWriter()
 
             for pdf_data in pdf_files:
                 # Read PDF from bytes
                 pdf_stream = io.BytesIO(pdf_data)
                 reader = PdfReader(pdf_stream)
-                merger.append(reader)
+
+                # Append all pages from this PDF
+                for page in reader.pages:
+                    writer.add_page(page)
+
                 logger.info(f"Added PDF with {len(reader.pages)} pages")
 
             # Write merged PDF to bytes
             output = io.BytesIO()
-            merger.write(output)
-            merger.close()
+            writer.write(output)
 
             output.seek(0)
             merged_pdf = output.read()
