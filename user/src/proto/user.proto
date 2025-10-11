@@ -6,6 +6,12 @@ service User {
   rpc GetGoogleLoginUrl (GetGoogleLoginUrlRequest) returns (GetGoogleLoginUrlReply);
   rpc Login (LoginRequest) returns (LoginReply);
   rpc ValidateToken (ValidateTokenRequest) returns (ValidateTokenReply);
+  rpc GetAllUsers (GetAllUsersRequest) returns (GetAllUsersReply);
+}
+
+message UserProfile {
+  string id = 1;
+  string name = 2;
 }
 
 message GetGoogleLoginUrlRequest { }
@@ -33,4 +39,10 @@ message ValidateTokenReply {
   string id = 1;
   string email = 2;
   string name = 3;
+}
+
+message GetAllUsersRequest { }
+
+message GetAllUsersReply {
+  repeated UserProfile users = 1;
 }

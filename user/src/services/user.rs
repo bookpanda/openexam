@@ -1,7 +1,8 @@
 use log::{error, info};
-use tonic::Status;
+use tonic::{Response, Status};
 
 use crate::models::user::User;
+use crate::proto::user::{GetAllUsersReply, UserProfile};
 use crate::repositories::user::UserRepo;
 
 #[derive(Debug)]
@@ -14,11 +15,19 @@ impl UserService {
         Self { user_repo }
     }
 
-    pub async fn get_all(&self) -> Result<Vec<User>, Status> {
+    pub async fn get_all(&self) -> Result<Response<GetAllUsersReply>, Status> {
         match self.user_repo.get_all().await {
             Ok(users) => {
                 info!("Successfully retrieved {} users", users.len());
-                Ok(users)
+                Ok(Response::new(GetAllUsersReply {
+                    users: users
+                        .into_iter()
+                        .map(|user| UserProfile {
+                            id: user.id.to_string(),
+                            name: user.name,
+                        })
+                        .collect(),
+                }))
             }
             Err(e) => {
                 error!("Failed to get all users: {:?}", e);

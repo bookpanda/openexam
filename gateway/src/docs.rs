@@ -10,6 +10,7 @@ use utoipa::{
         crate::handlers::user::get_google_login_url,
         crate::handlers::user::login,
         crate::handlers::user::validate_token,
+        crate::handlers::user::get_all_users,
         crate::handlers::cheatsheet::get_presigned_upload_url,
         crate::handlers::cheatsheet::get_presigned_get_url,
         crate::handlers::cheatsheet::remove,
@@ -32,6 +33,8 @@ use utoipa::{
         crate::dtos::UnshareResponse,
         crate::dtos::GenerateRequest,
         crate::dtos::GenerateResponse,
+        crate::dtos::GetAllUsersResponse,
+        crate::dtos::UserProfile,
     )),
     info(
         title = "openexam",

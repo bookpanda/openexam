@@ -9,6 +9,8 @@
     - flow: frontend -> s3 -> sqs -> generator -> s3 -> frontend
 -   frontend (typescript): nextjs, tailwindcss
 
+![Microservices Design](./docs/microservice-design.png)
+
 ## Getting Started
 
 ### Running all services locally
