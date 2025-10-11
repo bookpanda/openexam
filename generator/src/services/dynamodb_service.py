@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 
 import boto3
 from botocore.exceptions import ClientError
+
 from config import Config
 
 logger = logging.getLogger(__name__)
@@ -15,7 +16,7 @@ class DynamoDBService:
     def __init__(self) -> None:
         """Initialize DynamoDB client."""
         self.dynamodb = boto3.resource("dynamodb")
-        self.cheatsheets_table = self.dynamodb.Table(Config.CHEATSHEETS_TABLE_NAME)
+        self.files_table = self.dynamodb.Table(Config.FILES_TABLE_NAME)
 
     def save_cheatsheet(
         self, key: str, name: str, user_id: str, size: int, content_type: str
@@ -52,7 +53,7 @@ class DynamoDBService:
             }
 
             logger.info(f"Saving cheatsheet to DynamoDB: {key}")
-            self.cheatsheets_table.put_item(Item=item)
+            self.files_table.put_item(Item=item)
 
             logger.info(f"Successfully saved cheatsheet: id={cheatsheet_id}, key={key}")
             return cheatsheet_id
@@ -77,7 +78,7 @@ class DynamoDBService:
             Cheatsheet item or None if not found
         """
         try:
-            response = self.cheatsheets_table.query(
+            response = self.files_table.query(
                 IndexName="KeyIndex",
                 KeyConditionExpression="key = :key",
                 ExpressionAttributeValues={":key": key},
