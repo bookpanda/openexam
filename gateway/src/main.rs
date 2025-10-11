@@ -13,6 +13,7 @@ use utoipa_swagger_ui::SwaggerUi;
 mod config;
 mod docs;
 mod dtos;
+mod extractors;
 mod handlers;
 mod middleware;
 mod proto;

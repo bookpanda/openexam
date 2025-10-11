@@ -1,7 +1,7 @@
 use crate::dtos::{self, PresignGetQuery, PresignUploadQuery, RemoveFileQuery};
+use crate::extractors::UserId;
 use crate::services::cheatsheet::CheatsheetService;
 use axum::extract::{Query, State};
-use axum::http::HeaderMap;
 use axum::response::IntoResponse;
 
 #[derive(Debug, Clone)]
@@ -30,15 +30,9 @@ impl CheatsheetHandler {
 )]
 pub async fn get_presigned_upload_url(
     State(handler): State<CheatsheetHandler>,
+    UserId(user_id): UserId,
     Query(query): Query<PresignUploadQuery>,
-    headers: HeaderMap,
 ) -> impl IntoResponse {
-    let user_id = headers
-        .get("X-User-Id")
-        .and_then(|v| v.to_str().ok())
-        .unwrap_or("")
-        .to_string();
-
     handler
         .cheatsheet_service
         .get_presigned_upload_url(query.filename, user_id)
@@ -61,15 +55,9 @@ pub async fn get_presigned_upload_url(
 )]
 pub async fn get_presigned_get_url(
     State(handler): State<CheatsheetHandler>,
+    UserId(user_id): UserId,
     Query(query): Query<PresignGetQuery>,
-    headers: HeaderMap,
 ) -> impl IntoResponse {
-    let user_id = headers
-        .get("X-User-Id")
-        .and_then(|v| v.to_str().ok())
-        .unwrap_or("")
-        .to_string();
-
     handler
         .cheatsheet_service
         .get_presigned_get_url(query.key, user_id)
@@ -93,15 +81,9 @@ pub async fn get_presigned_get_url(
 )]
 pub async fn remove(
     State(handler): State<CheatsheetHandler>,
+    UserId(user_id): UserId,
     Query(query): Query<RemoveFileQuery>,
-    headers: HeaderMap,
 ) -> impl IntoResponse {
-    let user_id = headers
-        .get("X-User-Id")
-        .and_then(|v| v.to_str().ok())
-        .unwrap_or("")
-        .to_string();
-
     handler
         .cheatsheet_service
         .remove_file(query.file_type.to_string(), query.file, user_id)
@@ -120,14 +102,8 @@ pub async fn remove(
 )]
 pub async fn get_all_files(
     State(handler): State<CheatsheetHandler>,
-    headers: HeaderMap,
+    UserId(user_id): UserId,
 ) -> impl IntoResponse {
-    let user_id = headers
-        .get("X-User-Id")
-        .and_then(|v| v.to_str().ok())
-        .unwrap_or("")
-        .to_string();
-
     handler
         .cheatsheet_service
         .get_all_files(user_id)
