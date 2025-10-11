@@ -18,7 +18,6 @@ module "dynamodb" {
 
 module "lambda" {
   source             = "./modules/lambda"
-  region             = var.region
   app_name           = var.app_name
   bucket_name        = module.s3.bucket_name
   bucket_id          = module.s3.bucket_id

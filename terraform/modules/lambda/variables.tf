@@ -1,8 +1,3 @@
-variable "region" {
-  description = "AWS region"
-  type        = string
-}
-
 variable "app_name" {
   description = "Application name"
   type        = string

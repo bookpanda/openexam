@@ -193,7 +193,7 @@ class S3Service:
         """
         try:
             logger.info(f"Getting object from S3: {key}")
-            response = self.s3_client.get_object(Bucket=Config.S3_BUCKET, Key=key)
+            response = self.s3_client.get_object(Bucket=Config.BUCKET_NAME, Key=key)
             content = response["Body"].read()
             logger.info(f"Retrieved {len(content)} bytes from {key}")
             return content
@@ -218,7 +218,7 @@ class S3Service:
         try:
             logger.info(f"Putting object to S3: {key} ({len(body)} bytes)")
             self.s3_client.put_object(
-                Bucket=Config.S3_BUCKET,
+                Bucket=Config.BUCKET_NAME,
                 Key=key,
                 Body=body,
                 ContentType=content_type,

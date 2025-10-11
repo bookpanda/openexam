@@ -3,6 +3,7 @@ import os
 
 class Config:
     # S3 Configuration
+    AWS_REGION: str = os.getenv("AWS_REGION", "")
     BUCKET_NAME: str = os.getenv("BUCKET_NAME", "")
     SOURCE_PREFIX: str = os.getenv("SOURCE_PREFIX", "slide")
     TARGET_PREFIX: str = os.getenv("TARGET_PREFIX", "cheatsheets")
