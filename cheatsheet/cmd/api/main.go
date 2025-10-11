@@ -1,7 +1,9 @@
 package main
 
 import (
+	"context"
 	"log"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
@@ -11,6 +13,7 @@ import (
 	"storage/internal/app"
 	"storage/internal/config"
 	"storage/internal/handler"
+	"storage/internal/mq"
 	"storage/internal/repository"
 	"storage/internal/service"
 )
@@ -31,8 +34,18 @@ func main() {
 	ddbClient := dynamodb.NewFromConfig(cfg.AwsCfg)
 	metaRepo := repository.NewDynamoDBRepository(ddbClient, &cfg.DynamoDB)
 
+	// Generation Tracker (5 minute timeout)
+	generationTracker := service.NewGenerationTracker(5 * time.Minute)
+
+	// SQS Publisher
+	sqsPublisher := mq.NewSQSPublisher(cfg.AwsCfg, cfg.SQS.RequestQueueURL, cfg.SQS.ResponseQueueURL)
+
+	// SQS Consumer for response queue (runs in background)
+	sqsConsumer := mq.NewSQSConsumer(cfg.AwsCfg, cfg.SQS.ResponseQueueURL, generationTracker)
+	go sqsConsumer.Start(context.Background())
+
 	// Service + Handler
-	fileSvc := service.NewFileService(repo, metaRepo, cfg.MaxUploadMB)
+	fileSvc := service.NewFileService(repo, metaRepo, sqsPublisher, generationTracker, cfg.MaxUploadMB)
 	fileHandler := handler.NewFileHandler(fileSvc)
 
 	shareSvc := service.NewShareService(metaRepo)

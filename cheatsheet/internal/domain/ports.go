@@ -20,6 +20,12 @@ type FileService interface {
 	GetPresignedUploadURL(ctx context.Context, userId string, filename string, ttl time.Duration) (string, string, error)
 	GetAllFiles(ctx context.Context, userId string) ([]File, error)
 	GetFile(ctx context.Context, id string) (File, error)
+	Generate(ctx context.Context, fileIDs []string, userId string) (GenerateResult, error)
+}
+
+type GenerateResult struct {
+	FileID string
+	Key    string
 }
 
 type MetadataRepository interface {

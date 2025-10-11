@@ -8,7 +8,6 @@ import (
 	"storage/pkg/httpx"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/google/uuid"
 )
 
 type FileHandler struct {
@@ -49,13 +48,14 @@ func (h *FileHandler) Generate(c *fiber.Ctx) error {
 		}
 	}
 
-	// 3. Call SQS with fileIds and userId
-	fileID := uuid.New().String()
-	key := uuid.New().String()
+	result, err := h.svc.Generate(c.Context(), req.FileIDs, userId)
+	if err != nil {
+		return httpx.FromDomainError(c, err)
+	}
 
 	return httpx.Ok(c, fiber.Map{
-		"file_id": fileID,
-		"key":     key,
+		"file_id": result.FileID,
+		"key":     result.Key,
 	})
 }
 
