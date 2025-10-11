@@ -7,4 +7,5 @@ var (
 	ErrTooLarge      = errors.New("file too large")
 	ErrInvalidType   = errors.New("invalid content type")
 	ErrStorageFailed = errors.New("storage operation failed")
+	ErrTimeout       = errors.New("operation timeout")
 )

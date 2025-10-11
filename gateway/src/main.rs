@@ -13,6 +13,7 @@ use utoipa_swagger_ui::SwaggerUi;
 mod config;
 mod docs;
 mod dtos;
+mod extractors;
 mod handlers;
 mod middleware;
 mod proto;
@@ -29,7 +30,7 @@ async fn main() -> anyhow::Result<()> {
     let user_service = UserService::new(user_client);
     let user_handler = UserHandler::new(user_service.clone());
 
-    let cheatsheet_service = CheatsheetService::new();
+    let cheatsheet_service = CheatsheetService::new(config.server.cheatsheet_api_url);
     let cheatsheet_handler = CheatsheetHandler::new(cheatsheet_service);
 
     let cors = tower_http::cors::CorsLayer::new()
