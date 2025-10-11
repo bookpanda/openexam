@@ -14,10 +14,10 @@ func NewShareService(metaRepo domain.MetadataRepository) *ShareServiceImpl {
 	return &ShareServiceImpl{metaRepo: metaRepo}
 }
 
-func (s *ShareServiceImpl) Share(ctx context.Context, userId, cheatsheetId string) error {
-	return s.metaRepo.ShareCheatsheet(ctx, userId, cheatsheetId)
+func (s *ShareServiceImpl) Share(ctx context.Context, userId, key, fileId string) error {
+	return s.metaRepo.ShareFile(ctx, userId, key, fileId)
 }
 
-func (s *ShareServiceImpl) Unshare(ctx context.Context, userId, cheatsheetId string) error {
-	return s.metaRepo.UnshareCheatsheet(ctx, userId, cheatsheetId)
+func (s *ShareServiceImpl) Unshare(ctx context.Context, userId, key string) error {
+	return s.metaRepo.UnshareFile(ctx, userId, key)
 }

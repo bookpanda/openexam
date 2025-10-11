@@ -3,6 +3,7 @@ import logging
 from typing import Any
 from urllib.parse import unquote_plus
 
+from services.generator_service import GeneratorService
 from services.s3_service import S3Service
 from utils.s3_helpers import should_skip_file
 
@@ -12,6 +13,7 @@ logger = logging.getLogger(__name__)
 class SQSHandler:
     def __init__(self) -> None:
         self.s3_service = S3Service()
+        self.generator_service = GeneratorService()
 
     def handle_event(self, event: dict[str, Any]) -> dict[str, Any]:
         """
@@ -47,13 +49,26 @@ class SQSHandler:
         Process a single SQS record.
 
         Args:
-            record: SQS record containing S3 event
+            record: SQS record containing S3 event or generation request
 
         Raises:
             Exception: If processing fails
         """
-        # Parse the S3 event from SQS message
+        # Parse the message body
         message_body: dict[str, Any] = json.loads(record["body"])
+
+        # Check if this is a generation request
+        if (
+            "fileIds" in message_body
+            and "userId" in message_body
+            and "requestId" in message_body
+            and "responseQueueUrl" in message_body
+        ):
+            logger.info("Processing cheatsheet generation request")
+            self._handle_generation_request(message_body)
+            return
+
+        # Otherwise, it's an S3 event notification
         s3_records: list[dict[str, Any]] = message_body.get("Records", [])
 
         if not s3_records:
@@ -82,3 +97,31 @@ class SQSHandler:
 
         # Process the uploaded file
         self.s3_service.process_file(bucket_name, object_key, object_size)
+
+    def _handle_generation_request(self, body: dict[str, Any]) -> None:
+        """
+        Handle a cheatsheet generation request.
+
+        Args:
+            body: Message body containing fileIds, userId, requestId, and responseQueueUrl
+
+        Raises:
+            Exception: If generation fails
+        """
+        file_ids: list[str] = body.get("fileIds", [])
+        user_id: str = body.get("userId", "")
+        request_id: str = body.get("requestId", "")
+        response_queue_url: str = body.get("responseQueueUrl", "")
+
+        if not file_ids or not user_id or not request_id or not response_queue_url:
+            raise ValueError(
+                "fileIds, userId, requestId, and responseQueueUrl are required"
+            )
+
+        logger.info(
+            f"Generating cheatsheet for user {user_id} with {len(file_ids)} files (request: {request_id})"
+        )
+        result = self.generator_service.generate_cheatsheet(
+            file_ids, user_id, request_id, response_queue_url
+        )
+        logger.info(f"Cheatsheet generation completed: {result}")

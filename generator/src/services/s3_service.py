@@ -3,6 +3,7 @@ import secrets
 
 import boto3
 from botocore.exceptions import ClientError
+
 from config import Config
 from services.dynamodb_service import DynamoDBService
 from utils.s3_helpers import extract_user_id_and_name
@@ -176,3 +177,53 @@ class S3Service:
         except ClientError as error:
             # Log but don't fail if tagging fails
             logger.warning(f"Failed to tag file {key}: {error}")
+
+    def get_object(self, key: str) -> bytes:
+        """
+        Get object from S3.
+
+        Args:
+            key: S3 object key
+
+        Returns:
+            Object content as bytes
+
+        Raises:
+            ClientError: If S3 operation fails
+        """
+        try:
+            logger.info(f"Getting object from S3: {key}")
+            response = self.s3_client.get_object(Bucket=Config.BUCKET_NAME, Key=key)
+            content = response["Body"].read()
+            logger.info(f"Retrieved {len(content)} bytes from {key}")
+            return content
+        except ClientError as error:
+            logger.error(f"Failed to get object {key}: {str(error)}")
+            raise
+
+    def put_object(
+        self, key: str, body: bytes, content_type: str = "application/pdf"
+    ) -> None:
+        """
+        Put object to S3.
+
+        Args:
+            key: S3 object key
+            body: Object content as bytes
+            content_type: Content type for the object
+
+        Raises:
+            ClientError: If S3 operation fails
+        """
+        try:
+            logger.info(f"Putting object to S3: {key} ({len(body)} bytes)")
+            self.s3_client.put_object(
+                Bucket=Config.BUCKET_NAME,
+                Key=key,
+                Body=body,
+                ContentType=content_type,
+            )
+            logger.info(f"Successfully uploaded {key}")
+        except ClientError as error:
+            logger.error(f"Failed to put object {key}: {str(error)}")
+            raise
