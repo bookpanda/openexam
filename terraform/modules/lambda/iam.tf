@@ -31,6 +31,7 @@ resource "aws_iam_role_policy" "lambda_sqs_s3_dynamodb_policy" {
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
+      # SQS permissions - receive from request queue
       {
         Effect = "Allow"
         Action = [
@@ -38,7 +39,15 @@ resource "aws_iam_role_policy" "lambda_sqs_s3_dynamodb_policy" {
           "sqs:DeleteMessage",
           "sqs:GetQueueAttributes"
         ]
-        Resource = var.queue_arn
+        Resource = var.request_queue_arn
+      },
+      # SQS permissions - send to response queue
+      {
+        Effect = "Allow"
+        Action = [
+          "sqs:SendMessage"
+        ]
+        Resource = var.response_queue_arn
       },
       {
         Effect = "Allow"

@@ -13,8 +13,18 @@ variable "bucket_id" {
   type        = string
 }
 
-variable "queue_arn" {
-  description = "SQS queue ARN"
+variable "request_queue_arn" {
+  description = "ARN of the SQS request queue"
+  type        = string
+}
+
+variable "response_queue_arn" {
+  description = "ARN of the SQS response queue"
+  type        = string
+}
+
+variable "response_queue_url" {
+  description = "URL of the SQS response queue"
   type        = string
 }
 

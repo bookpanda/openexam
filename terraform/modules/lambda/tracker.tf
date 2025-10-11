@@ -1,10 +1,11 @@
 # Lambda function that tracks S3 upload/delete events and updates DynamoDB
+# Note: Package must be built first using generator/build_lambda.sh
 resource "aws_lambda_function" "tracker" {
-  filename         = data.archive_file.tracker_zip.output_path
+  filename         = "${path.module}/tracker_function.zip"
   function_name    = "${var.app_name}-s3-tracker"
   role             = aws_iam_role.lambda_role.arn
   handler          = "tracker.handler"
-  source_code_hash = data.archive_file.tracker_zip.output_base64sha256
+  source_code_hash = filebase64sha256("${path.module}/tracker_function.zip")
   runtime          = "python3.12"
   timeout          = 60
   memory_size      = 256
@@ -16,14 +17,6 @@ resource "aws_lambda_function" "tracker" {
       SHARES_TABLE_NAME = var.shares_table_name
     }
   }
-}
-
-# Create Lambda deployment package from modular source
-data "archive_file" "tracker_zip" {
-  type        = "zip"
-  source_dir  = "${path.root}/../generator/src"
-  output_path = "${path.module}/tracker_function.zip"
-  excludes    = ["__pycache__", "*.pyc", "*.pyo", ".pytest_cache", ".mypy_cache"]
 }
 
 # Lambda permission to allow S3 to invoke the function

@@ -16,12 +16,12 @@ output "bucket_name" {
   value = module.s3.bucket_name
 }
 
-output "queue_name" {
-  value = module.sqs.queue_name
+output "sqs_request_queue_url" {
+  value = module.sqs.request_queue_url
 }
 
-output "queue_url" {
-  value = module.sqs.queue_url
+output "sqs_response_queue_url" {
+  value = module.sqs.response_queue_url
 }
 
 output "shares_table_name" {
