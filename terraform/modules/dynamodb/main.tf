@@ -1,5 +1,5 @@
-resource "aws_dynamodb_table" "cheatsheets" {
-  name         = "${var.app_name}-cheatsheets"
+resource "aws_dynamodb_table" "files" {
+  name         = "${var.app_name}-files"
   billing_mode = "PAY_PER_REQUEST"
   hash_key     = "id"
 
@@ -13,45 +13,9 @@ resource "aws_dynamodb_table" "cheatsheets" {
     type = "S"
   }
 
-
   global_secondary_index {
     name            = "KeyIndex"
     hash_key        = "key"
-    projection_type = "ALL" # Project all attributes
-  }
-
-  point_in_time_recovery {
-    enabled = true
-  }
-
-  server_side_encryption {
-    enabled = true
-  }
-
-  tags = {
-    Name = "${var.app_name}-cheatsheets"
-  }
-}
-
-resource "aws_dynamodb_table" "shares" {
-  name         = "${var.app_name}-shares"
-  billing_mode = "PAY_PER_REQUEST"
-  hash_key     = "userId"
-  range_key    = "cheatsheetId" # Sort key for composite primary key
-
-  attribute {
-    name = "userId"
-    type = "S"
-  }
-
-  attribute {
-    name = "cheatsheetId"
-    type = "S"
-  }
-
-  global_secondary_index {
-    name            = "CheatsheetIdIndex"
-    hash_key        = "cheatsheetId"
     projection_type = "ALL"
   }
 
@@ -62,9 +26,41 @@ resource "aws_dynamodb_table" "shares" {
   server_side_encryption {
     enabled = true
   }
+}
 
-  tags = {
-    Name = "${var.app_name}-shares"
+resource "aws_dynamodb_table" "shares" {
+  name         = "${var.app_name}-shares"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "userId"
+  range_key    = "key" # Sort key for composite primary key (S3 key)
+
+  attribute {
+    name = "userId"
+    type = "S"
+  }
+
+  attribute {
+    name = "key"
+    type = "S"
+  }
+
+  attribute {
+    name = "fileId"
+    type = "S"
+  }
+
+  global_secondary_index {
+    name            = "FileIdIndex"
+    hash_key        = "fileId"
+    projection_type = "ALL"
+  }
+
+  point_in_time_recovery {
+    enabled = true
+  }
+
+  server_side_encryption {
+    enabled = true
   }
 }
 
@@ -88,17 +84,13 @@ resource "aws_iam_policy" "dynamodb_policy" {
           "dynamodb:BatchWriteItem"
         ]
         Resource = [
-          aws_dynamodb_table.cheatsheets.arn,
-          "${aws_dynamodb_table.cheatsheets.arn}/index/*",
+          aws_dynamodb_table.files.arn,
+          "${aws_dynamodb_table.files.arn}/index/*",
           aws_dynamodb_table.shares.arn,
-          "${aws_dynamodb_table.shares.arn}/index/*"
+          "${aws_dynamodb_table.shares.arn}/index/*",
         ]
       }
     ]
   })
-
-  tags = {
-    Name = "${var.app_name}-dynamodb-policy"
-  }
 }
 

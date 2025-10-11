@@ -14,19 +14,25 @@ import (
 	"github.com/google/uuid"
 )
 
-type FileServiceImpl struct {
-	repo        domain.FileRepository     // S3
-	metaRepo    domain.MetadataRepository // DynamoDB
-	maxUploadMB int64
-	// publisher   *mq.Publisher
+type SQSPublisher interface {
+	PublishGenerateRequest(ctx context.Context, fileIDs []string, userID string, requestID string) error
 }
 
-func NewFileService(repo domain.FileRepository, metaRepo domain.MetadataRepository, maxUploadMB int64) domain.FileService {
+type FileServiceImpl struct {
+	repo              domain.FileRepository     // S3
+	metaRepo          domain.MetadataRepository // DynamoDB
+	sqsPublisher      SQSPublisher
+	generationTracker *GenerationTracker
+	maxUploadMB       int64
+}
+
+func NewFileService(repo domain.FileRepository, metaRepo domain.MetadataRepository, sqsPublisher SQSPublisher, generationTracker *GenerationTracker, maxUploadMB int64) domain.FileService {
 	return &FileServiceImpl{
-		repo:     repo,
-		metaRepo: metaRepo,
-		// publisher:   publisher,
-		maxUploadMB: maxUploadMB,
+		repo:              repo,
+		metaRepo:          metaRepo,
+		sqsPublisher:      sqsPublisher,
+		generationTracker: generationTracker,
+		maxUploadMB:       maxUploadMB,
 	}
 }
 
@@ -50,19 +56,6 @@ func (s *FileServiceImpl) Upload(ctx context.Context, userId, filename string, c
 		return domain.FileObject{}, err
 	}
 
-	// Save metadata
-	cheatsheet := domain.Cheatsheet{
-		ID:        uuid.NewString(),
-		UserID:    userId,
-		CreatedAt: time.Now(),
-		Name:      filename,
-		Key:       fmt.Sprintf("%s_%s", prefix, filename), //key
-	}
-	if err := s.metaRepo.SaveCheatsheet(ctx, cheatsheet); err != nil {
-		return domain.FileObject{}, err
-	}
-
-	// Build file object
 	fileObj := domain.FileObject{
 		Key:         key,
 		Size:        size,
@@ -72,57 +65,55 @@ func (s *FileServiceImpl) Upload(ctx context.Context, userId, filename string, c
 	return fileObj, nil
 }
 
-func (s *FileServiceImpl) Download(ctx context.Context, key string) (io.ReadCloser, int64, string, error) {
-	return s.repo.Get(ctx, key)
-}
-
-func (s *FileServiceImpl) Remove(ctx context.Context, key string) error {
-
-	// "6531319021/676c8c_Ceph-Storage-Interface.png" → "676c8c_Ceph-Storage-Interface.png"
-	parts := strings.SplitN(key, "/", 2)
-	metaKey := key
-	if len(parts) == 2 {
-		metaKey = parts[1]
-	}
-
-	// Find cheatsheet from key before delete shares
-	cheatsheet, err := s.metaRepo.FindCheatsheetByKey(ctx, metaKey)
-	if err != nil {
-		return err
-	}
+func (s *FileServiceImpl) Remove(ctx context.Context, fileType string, userId string, file string) error {
+	key := fmt.Sprintf("%s/%s/%s", fileType, userId, file)
 
 	// delete file from S3
 	if err := s.repo.Delete(ctx, key); err != nil {
 		return err
 	}
 
-	// delete metadata cheatsheet by key (not usrId/key)
-	// if err := s.metaRepo.DeleteCheatsheetByKey(ctx, metaKey); err != nil {
-	// 	return err
-	// }
-	// delete metadata cheatsheet
-	if err := s.metaRepo.DeleteCheatsheet(ctx, cheatsheet.ID); err != nil {
-		return err
-	}
-
-	// delete metadata shares
-	if err := s.metaRepo.DeleteSharesByCheatsheetID(ctx, cheatsheet.ID); err != nil {
-		return err
-	}
 	return nil
+}
+
+func (s *FileServiceImpl) GetAllFiles(ctx context.Context, userId string) ([]domain.File, error) {
+	return s.metaRepo.GetAllFiles(ctx, userId)
+}
+
+func (s *FileServiceImpl) GetFile(ctx context.Context, id string) (domain.File, error) {
+	return s.metaRepo.GetFile(ctx, id)
 }
 
 func (s *FileServiceImpl) GetPresignedURL(ctx context.Context, key string, ttl time.Duration) (string, error) {
 	return s.repo.PresignGet(ctx, key, ttl)
 }
 
-func (s *FileServiceImpl) GetPresignedUploadURL(ctx context.Context, userId string, filename string, ttl time.Duration) (string, error) {
+func (s *FileServiceImpl) GetPresignedUploadURL(ctx context.Context, userId string, filename string, ttl time.Duration) (string, string, error) {
 	prefix := uuid.NewString()[0:6]
 	key := fmt.Sprintf("slides/%s/%s_%s", userId, prefix, filename)
 
 	result, err := s.repo.PresignPut(ctx, key, ttl)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
-	return result, nil
+	return result, key, nil
+}
+
+func (s *FileServiceImpl) Generate(ctx context.Context, fileIDs []string, userId string) (domain.GenerateResult, error) {
+	requestID := uuid.NewString()
+	resultCh := s.generationTracker.Register(requestID)
+
+	if err := s.sqsPublisher.PublishGenerateRequest(ctx, fileIDs, userId, requestID); err != nil {
+		return domain.GenerateResult{}, err
+	}
+
+	result, err := s.generationTracker.Wait(ctx, requestID, resultCh)
+	if err != nil {
+		return domain.GenerateResult{}, err
+	}
+
+	return domain.GenerateResult{
+		FileID: result.FileID,
+		Key:    result.Key,
+	}, nil
 }
