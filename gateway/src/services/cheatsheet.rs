@@ -108,10 +108,7 @@ impl CheatsheetService {
         file: String,
         user_id: String,
     ) -> ApiResponse<types::EmptyResponse> {
-        // // Construct the key as: {file_type}/{user_id}/{file}
-        // let key = format!("{}/{}/{}", file_type, user_id, file);
         let url = format!("{}/files", self.cheatsheet_api_url);
-        // println!("Removing file: {}", key);
 
         match reqwest::Client::new()
             .delete(&url)
