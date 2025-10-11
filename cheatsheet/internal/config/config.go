@@ -17,11 +17,17 @@ type AppConfig struct {
 	MaxUploadMB int64
 	AwsCfg      aws.Config
 	DynamoDB    DynamoDBConfig
+	SQS         SQSConfig
 }
 
 type DynamoDBConfig struct {
 	FilesTable  string
 	SharesTable string
+}
+
+type SQSConfig struct {
+	RequestQueueURL  string
+	ResponseQueueURL string
 }
 
 func Load() AppConfig {
@@ -47,6 +53,10 @@ func Load() AppConfig {
 		DynamoDB: DynamoDBConfig{
 			FilesTable:  getEnv("FILES_TABLE", "openexam-files"),
 			SharesTable: getEnv("SHARES_TABLE", "openexam-shares"),
+		},
+		SQS: SQSConfig{
+			RequestQueueURL:  getEnv("SQS_REQUEST_QUEUE_URL", "openexam-queue"),
+			ResponseQueueURL: getEnv("SQS_RESPONSE_QUEUE_URL", "openexam-queue-responses"),
 		},
 	}
 }
