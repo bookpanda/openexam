@@ -3,6 +3,7 @@
 import { useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { client } from "@/api/client"
+import { userService } from "@/lib/services/user-service"
 
 export default function OAuthCallback() {
   const router = useRouter()
@@ -19,12 +20,21 @@ export default function OAuthCallback() {
             body: { code, state },
           })
           console.log("Login response:", response)
-          localStorage.setItem("accessToken", response.data?.token || "")
+          const userData = response.data
+          if (userData) {
+            localStorage.setItem("accessToken", userData.token || "")
 
-          router.replace("/")
+            userService.saveUserProfile({
+              id: userData.id,
+              email: userData.email,
+              name: userData.name,
+            })
+          }
+          
+          router.replace("/dashboard")
         } catch (err) {
           console.error("Login failed", err)
-          router.replace("/")
+          router.replace("/signin")
         }
       }
     }

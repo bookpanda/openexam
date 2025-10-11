@@ -4,9 +4,11 @@ import { paths } from "./schema"
 
 const middleware: Middleware = {
   async onRequest({ request }) {
-    const accessToken = localStorage.getItem("accessToken")
-    if (accessToken) {
-      request.headers.set("Authorization", `Bearer ${accessToken}`)
+    if (typeof window !== "undefined") {
+      const accessToken = localStorage.getItem("accessToken")
+      if (accessToken) {
+        request.headers.set("Authorization", `Bearer ${accessToken}`)
+      }
     }
     return request
   },
@@ -19,7 +21,7 @@ const middleware: Middleware = {
 }
 
 const client = createClient<paths>({
-  baseUrl: process.env.BACKEND_URL || "http://localhost:3001",
+  baseUrl: process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3001",
   fetch: (url, init = {}) => {
     return fetch(url, {
       ...init,
