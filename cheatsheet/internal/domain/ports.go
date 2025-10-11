@@ -21,18 +21,16 @@ type FileService interface {
 	GetPresignedURL(ctx context.Context, key string, ttl time.Duration) (string, error)
 	GetPresignedUploadURL(ctx context.Context, userId string, filename string, ttl time.Duration) (string, string, error)
 	GetAllFiles(ctx context.Context, userId string) ([]File, error)
+	GetFile(ctx context.Context, id string) (File, error)
 }
 
 type MetadataRepository interface {
-	// SaveCheatsheet(ctx context.Context, c Cheatsheet) error
-	// DeleteCheatsheet(ctx context.Context, id string) error
-	ShareCheatsheet(ctx context.Context, userId, key, fileId string) error
-	UnshareCheatsheet(ctx context.Context, userId, key string) error
-
-	// DeleteCheatsheetByKey(ctx context.Context, key string) error
-	DeleteSharesByFileID(ctx context.Context, fileId string) error
-	FindCheatsheetByKey(ctx context.Context, key string) (File, error)
+	ShareFile(ctx context.Context, userId, key, fileId string) error
+	UnshareFile(ctx context.Context, userId, key string) error
+	// DeleteSharesByFileID(ctx context.Context, fileId string) error
+	// FindFileByKey(ctx context.Context, key string) (File, error)
 	GetAllFiles(ctx context.Context, userId string) ([]File, error)
+	GetFile(ctx context.Context, id string) (File, error)
 }
 
 type ShareService interface {

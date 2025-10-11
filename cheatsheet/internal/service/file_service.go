@@ -18,14 +18,12 @@ type FileServiceImpl struct {
 	repo        domain.FileRepository     // S3
 	metaRepo    domain.MetadataRepository // DynamoDB
 	maxUploadMB int64
-	// publisher   *mq.Publisher
 }
 
 func NewFileService(repo domain.FileRepository, metaRepo domain.MetadataRepository, maxUploadMB int64) domain.FileService {
 	return &FileServiceImpl{
-		repo:     repo,
-		metaRepo: metaRepo,
-		// publisher:   publisher,
+		repo:        repo,
+		metaRepo:    metaRepo,
 		maxUploadMB: maxUploadMB,
 	}
 }
@@ -50,19 +48,6 @@ func (s *FileServiceImpl) Upload(ctx context.Context, userId, filename string, c
 		return domain.FileObject{}, err
 	}
 
-	// Save metadata
-	// cheatsheet := domain.Cheatsheet{
-	// 	ID:        uuid.NewString(),
-	// 	UserID:    userId,
-	// 	CreatedAt: time.Now(),
-	// 	Name:      filename,
-	// 	Key:       fmt.Sprintf("%s_%s", prefix, filename), //key
-	// }
-	// if err := s.metaRepo.SaveCheatsheet(ctx, cheatsheet); err != nil {
-	// 	return domain.FileObject{}, err
-	// }
-
-	// Build file object
 	fileObj := domain.FileObject{
 		Key:         key,
 		Size:        size,
@@ -79,17 +64,6 @@ func (s *FileServiceImpl) Download(ctx context.Context, key string) (io.ReadClos
 func (s *FileServiceImpl) Remove(ctx context.Context, fileType string, userId string, file string) error {
 	key := fmt.Sprintf("%s/%s/%s", fileType, userId, file)
 
-	// // Find file from key before delete shares
-	// fileObj, err := s.metaRepo.FindCheatsheetByKey(ctx, key)
-	// if err != nil {
-	// 	return err
-	// }
-
-	// // delete metadata shares for this file
-	// if err := s.metaRepo.DeleteSharesByFileID(ctx, fileObj.ID); err != nil {
-	// 	return err
-	// }
-
 	// delete file from S3
 	if err := s.repo.Delete(ctx, key); err != nil {
 		return err
@@ -100,6 +74,10 @@ func (s *FileServiceImpl) Remove(ctx context.Context, fileType string, userId st
 
 func (s *FileServiceImpl) GetAllFiles(ctx context.Context, userId string) ([]domain.File, error) {
 	return s.metaRepo.GetAllFiles(ctx, userId)
+}
+
+func (s *FileServiceImpl) GetFile(ctx context.Context, id string) (domain.File, error) {
+	return s.metaRepo.GetFile(ctx, id)
 }
 
 func (s *FileServiceImpl) GetPresignedURL(ctx context.Context, key string, ttl time.Duration) (string, error) {

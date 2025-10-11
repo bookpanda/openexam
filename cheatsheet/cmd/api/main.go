@@ -31,24 +31,15 @@ func main() {
 	ddbClient := dynamodb.NewFromConfig(cfg.AwsCfg)
 	metaRepo := repository.NewDynamoDBRepository(ddbClient, &cfg.DynamoDB)
 
-	// RabbitMQ
-	// mqConn := mq.NewMQ()
-	// defer mqConn.Conn.Close()
-	// defer mqConn.Channel.Close()
-	// pub := mq.NewPublisher(mqConn)
-
 	// Service + Handler
 	fileSvc := service.NewFileService(repo, metaRepo, cfg.MaxUploadMB)
 	fileHandler := handler.NewFileHandler(fileSvc)
 
 	shareSvc := service.NewShareService(metaRepo)
-	shareHandler := handler.NewShareHandler(shareSvc)
+	shareHandler := handler.NewShareHandler(shareSvc, fileSvc)
 
 	// Routes
 	app.SetupRoutes(appHttp, fileHandler, shareHandler)
-
-	// Example consumer: listen file upload events
-	// go mq.StartConsumer(mqConn, "log-queue", "file.upload")
 
 	appHttp.Listen(":" + cfg.Port)
 	log.Fatal(appHttp.Listen(":" + cfg.Port))

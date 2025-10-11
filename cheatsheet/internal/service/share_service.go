@@ -15,9 +15,9 @@ func NewShareService(metaRepo domain.MetadataRepository) *ShareServiceImpl {
 }
 
 func (s *ShareServiceImpl) Share(ctx context.Context, userId, key, fileId string) error {
-	return s.metaRepo.ShareCheatsheet(ctx, userId, key, fileId)
+	return s.metaRepo.ShareFile(ctx, userId, key, fileId)
 }
 
 func (s *ShareServiceImpl) Unshare(ctx context.Context, userId, key string) error {
-	return s.metaRepo.UnshareCheatsheet(ctx, userId, key)
+	return s.metaRepo.UnshareFile(ctx, userId, key)
 }
