@@ -8,11 +8,41 @@ use crate::{
 #[derive(Debug, Clone)]
 pub struct CheatsheetService {
     cheatsheet_api_url: String,
+    client: reqwest::Client,
 }
 
 impl CheatsheetService {
     pub fn new(cheatsheet_api_url: String) -> Self {
-        Self { cheatsheet_api_url }
+        Self {
+            cheatsheet_api_url,
+            client: reqwest::Client::new(),
+        }
+    }
+
+    async fn send_request(
+        &self,
+        request: reqwest::RequestBuilder,
+    ) -> Result<reqwest::Response, String> {
+        request.send().await.map_err(|e| {
+            error!("HTTP request error: {:?}", e);
+            format!("Request failed: {:?}", e)
+        })
+    }
+
+    async fn parse_json<T: serde::de::DeserializeOwned>(
+        &self,
+        response: reqwest::Response,
+    ) -> Result<T, String> {
+        if !response.status().is_success() {
+            let status = response.status();
+            error!("Request failed with status: {}", status);
+            return Err(format!("Request failed with status: {}", status));
+        }
+
+        response.json::<T>().await.map_err(|e| {
+            error!("Failed to parse response: {:?}", e);
+            format!("Failed to parse response: {:?}", e)
+        })
     }
 
     pub async fn get_presigned_upload_url(
@@ -26,37 +56,24 @@ impl CheatsheetService {
             urlencoding::encode(&filename)
         );
 
-        match reqwest::Client::new()
-            .get(&url)
-            .header("X-User-Id", user_id)
-            .send()
-            .await
-        {
-            Ok(response) => match response
-                .json::<types::ServiceResponse<types::GetPresignedUploadUrlData>>()
-                .await
-            {
-                Ok(data) => {
-                    let result = dtos::GetPresignedUploadUrlResponse {
-                        expires_in: data.data.expiresIn.to_string(),
-                        url: data.data.url,
-                        key: data.data.key,
-                    };
-                    ApiResponse::ok(result)
-                }
-                Err(e) => {
-                    error!("Failed to parse presigned upload url response: {:?}", e);
-                    ApiResponse::internal_error(&format!(
-                        "Failed to parse presigned upload url response: {:?}",
-                        e
-                    ))
-                }
-            },
-            Err(e) => {
-                error!("Get presigned upload url error: {:?}", e);
-                ApiResponse::internal_error(&format!("Get presigned upload url error: {:?}", e))
-            }
-        }
+        let request = self.client.get(&url).header("X-User-Id", user_id);
+        let response = match self.send_request(request).await {
+            Ok(r) => r,
+            Err(e) => return ApiResponse::internal_error(&e),
+        };
+
+        let data: types::ServiceResponse<types::GetPresignedUploadUrlData> =
+            match self.parse_json(response).await {
+                Ok(d) => d,
+                Err(e) => return ApiResponse::internal_error(&e),
+            };
+
+        let result = dtos::GetPresignedUploadUrlResponse {
+            expires_in: data.data.expiresIn.to_string(),
+            url: data.data.url,
+            key: data.data.key,
+        };
+        ApiResponse::ok(result)
     }
 
     pub async fn get_presigned_get_url(
@@ -70,36 +87,23 @@ impl CheatsheetService {
             urlencoding::encode(&key)
         );
 
-        match reqwest::Client::new()
-            .get(&url)
-            .header("X-User-Id", user_id)
-            .send()
-            .await
-        {
-            Ok(response) => match response
-                .json::<types::ServiceResponse<types::GetPresignedGetUrlData>>()
-                .await
-            {
-                Ok(data) => {
-                    let result = dtos::GetPresignedGetUrlResponse {
-                        expires_in: data.data.expiresIn.to_string(),
-                        url: data.data.url,
-                    };
-                    ApiResponse::ok(result)
-                }
-                Err(e) => {
-                    error!("Failed to parse presigned upload url response: {:?}", e);
-                    ApiResponse::internal_error(&format!(
-                        "Failed to parse presigned upload url response: {:?}",
-                        e
-                    ))
-                }
-            },
-            Err(e) => {
-                error!("Get presigned upload url error: {:?}", e);
-                ApiResponse::internal_error(&format!("Get presigned upload url error: {:?}", e))
-            }
-        }
+        let request = self.client.get(&url).header("X-User-Id", user_id);
+        let response = match self.send_request(request).await {
+            Ok(r) => r,
+            Err(e) => return ApiResponse::internal_error(&e),
+        };
+
+        let data: types::ServiceResponse<types::GetPresignedGetUrlData> =
+            match self.parse_json(response).await {
+                Ok(d) => d,
+                Err(e) => return ApiResponse::internal_error(&e),
+            };
+
+        let result = dtos::GetPresignedGetUrlResponse {
+            expires_in: data.data.expiresIn.to_string(),
+            url: data.data.url,
+        };
+        ApiResponse::ok(result)
     }
 
     pub async fn remove_file(
@@ -110,83 +114,60 @@ impl CheatsheetService {
     ) -> ApiResponse<types::EmptyResponse> {
         let url = format!("{}/files", self.cheatsheet_api_url);
 
-        match reqwest::Client::new()
+        let request = self
+            .client
             .delete(&url)
-            .header("X-User-Id", user_id.to_string())
+            .header("X-User-Id", &user_id)
             .query(&[
                 ("file_type", file_type),
                 ("user_id", user_id),
                 ("file", file),
-            ])
-            .send()
-            .await
-        {
-            Ok(response) => {
-                if response.status().is_success() {
-                    ApiResponse::ok(types::EmptyResponse {})
-                } else {
-                    let status = response.status();
-                    error!("Failed to delete file: status {}", status);
-                    ApiResponse::internal_error(&format!(
-                        "Failed to delete file: status {}",
-                        status
-                    ))
-                }
-            }
-            Err(e) => {
-                error!("Delete file error: {:?}", e);
-                ApiResponse::internal_error(&format!("Delete file error: {:?}", e))
-            }
+            ]);
+
+        let response = match self.send_request(request).await {
+            Ok(r) => r,
+            Err(e) => return ApiResponse::internal_error(&e),
+        };
+
+        if !response.status().is_success() {
+            let status = response.status();
+            error!("Failed to delete file: status {}", status);
+            return ApiResponse::internal_error(&format!(
+                "Failed to delete file: status {}",
+                status
+            ));
         }
+
+        ApiResponse::ok(types::EmptyResponse {})
     }
 
     pub async fn get_all_files(&self, user_id: String) -> ApiResponse<Vec<dtos::File>> {
         let url = format!("{}/files", self.cheatsheet_api_url);
 
-        match reqwest::Client::new()
-            .get(&url)
-            .header("X-User-Id", user_id)
-            .send()
-            .await
-        {
-            Ok(response) => {
-                if response.status().is_success() {
-                    match response
-                        .json::<types::ServiceResponse<types::FilesData>>()
-                        .await
-                    {
-                        Ok(response_data) => ApiResponse::ok(
-                            response_data
-                                .data
-                                .files
-                                .into_iter()
-                                .map(|f| dtos::File {
-                                    id: f.ID,
-                                    user_id: f.UserID,
-                                    created_at: f.CreatedAt,
-                                    name: f.Name,
-                                    key: f.Key,
-                                })
-                                .collect(),
-                        ),
-                        Err(e) => {
-                            error!("Failed to parse files response: {:?}", e);
-                            ApiResponse::internal_error(&format!(
-                                "Failed to parse response: {:?}",
-                                e
-                            ))
-                        }
-                    }
-                } else {
-                    let status = response.status();
-                    error!("Failed to get files: status {}", status);
-                    ApiResponse::internal_error(&format!("Failed to get files: status {}", status))
-                }
-            }
-            Err(e) => {
-                error!("Get files error: {:?}", e);
-                ApiResponse::internal_error(&format!("Get files error: {:?}", e))
-            }
-        }
+        let request = self.client.get(&url).header("X-User-Id", user_id);
+        let response = match self.send_request(request).await {
+            Ok(r) => r,
+            Err(e) => return ApiResponse::internal_error(&e),
+        };
+
+        let data: types::ServiceResponse<types::FilesData> = match self.parse_json(response).await {
+            Ok(d) => d,
+            Err(e) => return ApiResponse::internal_error(&e),
+        };
+
+        let files = data
+            .data
+            .files
+            .into_iter()
+            .map(|f| dtos::File {
+                id: f.ID,
+                user_id: f.UserID,
+                created_at: f.CreatedAt,
+                name: f.Name,
+                key: f.Key,
+            })
+            .collect();
+
+        ApiResponse::ok(files)
     }
 }
