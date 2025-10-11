@@ -1,7 +1,9 @@
 package main
 
 import (
+	"context"
 	"log"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
@@ -11,6 +13,7 @@ import (
 	"storage/internal/app"
 	"storage/internal/config"
 	"storage/internal/handler"
+	"storage/internal/mq"
 	"storage/internal/repository"
 	"storage/internal/service"
 )
@@ -29,26 +32,27 @@ func main() {
 
 	// DynamoDB
 	ddbClient := dynamodb.NewFromConfig(cfg.AwsCfg)
-	metaRepo := repository.NewDynamoDBRepository(ddbClient, "cheatsheets", "shares")
+	metaRepo := repository.NewDynamoDBRepository(ddbClient, &cfg.DynamoDB)
 
-	// RabbitMQ
-	// mqConn := mq.NewMQ()
-	// defer mqConn.Conn.Close()
-	// defer mqConn.Channel.Close()
-	// pub := mq.NewPublisher(mqConn)
+	// Generation Tracker (5 minute timeout)
+	generationTracker := service.NewGenerationTracker(5 * time.Minute)
+
+	// SQS Publisher
+	sqsPublisher := mq.NewSQSPublisher(cfg.AwsCfg, cfg.SQS.RequestQueueURL, cfg.SQS.ResponseQueueURL)
+
+	// SQS Consumer for response queue (runs in background)
+	sqsConsumer := mq.NewSQSConsumer(cfg.AwsCfg, cfg.SQS.ResponseQueueURL, generationTracker)
+	go sqsConsumer.Start(context.Background())
 
 	// Service + Handler
-	fileSvc := service.NewFileService(repo, metaRepo, cfg.MaxUploadMB)
+	fileSvc := service.NewFileService(repo, metaRepo, sqsPublisher, generationTracker, cfg.MaxUploadMB)
 	fileHandler := handler.NewFileHandler(fileSvc)
 
 	shareSvc := service.NewShareService(metaRepo)
-	shareHandler := handler.NewShareHandler(shareSvc)
+	shareHandler := handler.NewShareHandler(shareSvc, fileSvc)
 
 	// Routes
 	app.SetupRoutes(appHttp, fileHandler, shareHandler)
-
-	// Example consumer: listen file upload events
-	// go mq.StartConsumer(mqConn, "log-queue", "file.upload")
 
 	appHttp.Listen(":" + cfg.Port)
 	log.Fatal(appHttp.Listen(":" + cfg.Port))
