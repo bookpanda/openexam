@@ -37,13 +37,14 @@ func (h *FileHandler) Generate(c *fiber.Ctx) error {
 		return httpx.FromDomainError(c, err)
 	}
 
-	hasFileAcess := map[string]bool{}
+	hasFileAccess := map[string]bool{}
 	for _, file := range files {
-		hasFileAcess[file.Key] = true
+		hasFileAccess[file.ID] = true
 	}
 
 	for _, fileID := range req.FileIDs {
-		if !hasFileAcess[fileID] {
+		_, ok := hasFileAccess[fileID]
+		if !ok {
 			return httpx.BadRequest(c, "user does not have access to file: "+fileID)
 		}
 	}
