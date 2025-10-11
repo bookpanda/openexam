@@ -1,4 +1,4 @@
-use axum::Json;
+use axum::{Json, response::IntoResponse};
 use hyper::StatusCode;
 use serde::Serialize;
 
@@ -18,6 +18,13 @@ impl<T> ApiResponse<T> {
         ApiResponse::Success(data)
     }
 
+    pub fn error(status: u16, msg: &str) -> Self {
+        ApiResponse::Error {
+            status,
+            message: msg.to_string(),
+        }
+    }
+
     pub fn not_found(msg: &str) -> Self {
         ApiResponse::Error {
             status: StatusCode::NOT_FOUND.as_u16(),
@@ -32,7 +39,10 @@ impl<T> ApiResponse<T> {
         }
     }
 
-    pub fn into_axum_response(self) -> (StatusCode, Json<Self>) {
+    pub fn into_axum_response(self) -> impl IntoResponse
+    where
+        T: Serialize,
+    {
         let status = match &self {
             ApiResponse::Success(_) => StatusCode::OK,
             ApiResponse::Error { status, .. } => {

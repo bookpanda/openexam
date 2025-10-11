@@ -3,12 +3,14 @@ import os
 
 class Config:
     # S3 Configuration
+    AWS_REGION: str = os.getenv("AWS_REGION", "")
     BUCKET_NAME: str = os.getenv("BUCKET_NAME", "")
     SOURCE_PREFIX: str = os.getenv("SOURCE_PREFIX", "slide")
     TARGET_PREFIX: str = os.getenv("TARGET_PREFIX", "cheatsheets")
 
     # DynamoDB Configuration
-    CHEATSHEETS_TABLE_NAME: str = os.getenv("CHEATSHEETS_TABLE_NAME", "")
+    FILES_TABLE_NAME: str = os.getenv("FILES_TABLE_NAME", "")
+    SHARES_TABLE_NAME: str = os.getenv("SHARES_TABLE_NAME", "")
 
     # Processing Configuration
     MAX_CONTENT_PREVIEW_CHARS: int = int(os.getenv("MAX_CONTENT_PREVIEW_CHARS", "500"))
@@ -21,9 +23,11 @@ class Config:
         "application/xml",
     )
 
-    @classmethod
-    def validate(cls) -> None:
-        if not cls.BUCKET_NAME:
-            raise ValueError("BUCKET_NAME environment variable is required")
-        if not cls.CHEATSHEETS_TABLE_NAME:
-            raise ValueError("CHEATSHEETS_TABLE_NAME environment variable is required")
+    # @classmethod
+    # def validate(cls) -> None:
+    #     if not cls.BUCKET_NAME:
+    #         raise ValueError("BUCKET_NAME environment variable is required")
+    #     if not cls.FILES_TABLE_NAME:
+    #         raise ValueError("FILES_TABLE_NAME environment variable is required")
+    #     if not cls.SHARES_TABLE_NAME:
+    #         raise ValueError("SHARES_TABLE_NAME environment variable is required")
