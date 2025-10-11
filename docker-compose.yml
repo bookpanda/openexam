@@ -6,6 +6,7 @@ services:
     container_name: openexam-gateway
     depends_on:
       - openexam-user
+      - openexam-cheatsheet
     restart: unless-stopped
     environment:
       - DEBUG=true
