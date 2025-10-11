@@ -8,99 +8,131 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 
+	"storage/internal/config"
 	"storage/internal/domain"
 )
 
 type DynamoDBRepository struct {
-	client           *dynamodb.Client
-	cheatsheetsTable string
-	sharesTable      string
+	client      *dynamodb.Client
+	filesTable  string
+	sharesTable string
 }
 
-func NewDynamoDBRepository(client *dynamodb.Client, cheatsheetsTable, sharesTable string) *DynamoDBRepository {
-	return &DynamoDBRepository{client: client, cheatsheetsTable: cheatsheetsTable, sharesTable: sharesTable}
-}
-
-func (r *DynamoDBRepository) SaveCheatsheet(ctx context.Context, c domain.Cheatsheet) error {
-	item, err := attributevalue.MarshalMap(c)
-	if err != nil {
-		return err
+func NewDynamoDBRepository(client *dynamodb.Client, config *config.DynamoDBConfig) *DynamoDBRepository {
+	return &DynamoDBRepository{
+		client:      client,
+		filesTable:  config.FilesTable,
+		sharesTable: config.SharesTable,
 	}
-	_, err = r.client.PutItem(ctx, &dynamodb.PutItemInput{
-		TableName: &r.cheatsheetsTable,
-		Item:      item,
-	})
-	return err
 }
 
-func (r *DynamoDBRepository) DeleteCheatsheet(ctx context.Context, id string) error {
-	_, err := r.client.DeleteItem(ctx, &dynamodb.DeleteItemInput{
-		TableName: &r.cheatsheetsTable,
+func (r *DynamoDBRepository) GetAllFiles(ctx context.Context, userId string) ([]domain.File, error) {
+	// Step 1: Query shares table to get all fileIds user has access to
+	sharesOut, err := r.client.Query(ctx, &dynamodb.QueryInput{
+		TableName:              &r.sharesTable,
+		KeyConditionExpression: aws.String("userId = :uid"),
+		ExpressionAttributeValues: map[string]types.AttributeValue{
+			":uid": &types.AttributeValueMemberS{Value: userId},
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if len(sharesOut.Items) == 0 {
+		return []domain.File{}, nil // Return empty array if no shares found
+	}
+
+	// Step 2: Extract fileIds from shares and build keys for batch get
+	var keysToFetch []map[string]types.AttributeValue
+	for _, item := range sharesOut.Items {
+		var share domain.Share
+		if err := attributevalue.UnmarshalMap(item, &share); err != nil {
+			continue // Skip invalid items
+		}
+
+		keysToFetch = append(keysToFetch, map[string]types.AttributeValue{
+			"id": &types.AttributeValueMemberS{Value: share.FileID},
+		})
+	}
+
+	if len(keysToFetch) == 0 {
+		return []domain.File{}, nil
+	}
+
+	// Step 3: Batch get all files in a single request (up to 100 items)
+	batchOut, err := r.client.BatchGetItem(ctx, &dynamodb.BatchGetItemInput{
+		RequestItems: map[string]types.KeysAndAttributes{
+			r.filesTable: {
+				Keys: keysToFetch,
+			},
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// Step 4: Unmarshal all files
+	var files []domain.File
+	for _, item := range batchOut.Responses[r.filesTable] {
+		var file domain.File
+		if err := attributevalue.UnmarshalMap(item, &file); err != nil {
+			continue // Skip if unmarshal fails
+		}
+		files = append(files, file)
+	}
+
+	return files, nil
+}
+
+func (r *DynamoDBRepository) GetFile(ctx context.Context, id string) (domain.File, error) {
+	out, err := r.client.GetItem(ctx, &dynamodb.GetItemInput{
+		TableName: &r.filesTable,
 		Key: map[string]types.AttributeValue{
 			"id": &types.AttributeValueMemberS{Value: id},
 		},
 	})
-	return err
+	if err != nil {
+		return domain.File{}, err
+	}
+	if len(out.Item) == 0 {
+		return domain.File{}, domain.ErrNotFound
+	}
+
+	var file domain.File
+	if err := attributevalue.UnmarshalMap(out.Item, &file); err != nil {
+		return domain.File{}, err
+	}
+	return file, nil
 }
 
-func (r *DynamoDBRepository) ShareCheatsheet(ctx context.Context, userId, cheatsheetId string) error {
+func (r *DynamoDBRepository) ShareFile(ctx context.Context, userId, key, fileId string) error {
 	_, err := r.client.PutItem(ctx, &dynamodb.PutItemInput{
 		TableName: &r.sharesTable,
 		Item: map[string]types.AttributeValue{
-			"userId":       &types.AttributeValueMemberS{Value: userId},
-			"cheatsheetId": &types.AttributeValueMemberS{Value: cheatsheetId},
+			"userId": &types.AttributeValueMemberS{Value: userId},
+			"key":    &types.AttributeValueMemberS{Value: key},
+			"fileId": &types.AttributeValueMemberS{Value: fileId},
 		},
 	})
 	return err
 }
 
-func (r *DynamoDBRepository) UnshareCheatsheet(ctx context.Context, userId, cheatsheetId string) error {
+func (r *DynamoDBRepository) UnshareFile(ctx context.Context, userId, key string) error {
 	_, err := r.client.DeleteItem(ctx, &dynamodb.DeleteItemInput{
 		TableName: &r.sharesTable,
 		Key: map[string]types.AttributeValue{
-			"userId":       &types.AttributeValueMemberS{Value: userId},
-			"cheatsheetId": &types.AttributeValueMemberS{Value: cheatsheetId},
-		},
-	})
-	return err
-}
-func (r *DynamoDBRepository) DeleteCheatsheetByKey(ctx context.Context, key string) error {
-	out, err := r.client.Query(ctx, &dynamodb.QueryInput{
-		TableName:              &r.cheatsheetsTable,
-		IndexName:              aws.String("key-index"),
-		KeyConditionExpression: aws.String("#k = :v"),
-		ExpressionAttributeNames: map[string]string{
-			"#k": "key",
-		},
-		ExpressionAttributeValues: map[string]types.AttributeValue{
-			":v": &types.AttributeValueMemberS{Value: key},
-		},
-	})
-	if err != nil {
-		return err
-	}
-	if len(out.Items) == 0 {
-		return nil
-	}
-
-	var c domain.Cheatsheet
-	if err := attributevalue.UnmarshalMap(out.Items[0], &c); err != nil {
-		return err
-	}
-
-	_, err = r.client.DeleteItem(ctx, &dynamodb.DeleteItemInput{
-		TableName: &r.cheatsheetsTable,
-		Key: map[string]types.AttributeValue{
-			"id": &types.AttributeValueMemberS{Value: c.ID},
+			"userId": &types.AttributeValueMemberS{Value: userId},
+			"key":    &types.AttributeValueMemberS{Value: key},
 		},
 	})
 	return err
 }
 
-func (r *DynamoDBRepository) DeleteSharesByKey(ctx context.Context, key string) error {
+func (r *DynamoDBRepository) FindFileByKey(ctx context.Context, key string) (domain.File, error) {
 	out, err := r.client.Query(ctx, &dynamodb.QueryInput{
-		TableName:              &r.cheatsheetsTable,
-		IndexName:              aws.String("key-index"),
+		TableName:              &r.filesTable,
+		IndexName:              aws.String("KeyIndex"),
 		KeyConditionExpression: aws.String("#k = :v"),
 		ExpressionAttributeNames: map[string]string{
 			"#k": "key",
@@ -110,103 +142,15 @@ func (r *DynamoDBRepository) DeleteSharesByKey(ctx context.Context, key string) 
 		},
 	})
 	if err != nil {
-		return err
+		return domain.File{}, err
 	}
 	if len(out.Items) == 0 {
-		return nil
+		return domain.File{}, domain.ErrNotFound
 	}
 
-	var c domain.Cheatsheet
+	var c domain.File
 	if err := attributevalue.UnmarshalMap(out.Items[0], &c); err != nil {
-		return err
-	}
-
-	// list shares, userId+cheatsheetId
-	outShares, err := r.client.Query(ctx, &dynamodb.QueryInput{
-		TableName:              &r.sharesTable,
-		IndexName:              aws.String("cheatsheetId-index"), // GSI
-		KeyConditionExpression: aws.String("cheatsheetId = :cid"),
-		ExpressionAttributeValues: map[string]types.AttributeValue{
-			":cid": &types.AttributeValueMemberS{Value: c.ID},
-		},
-	})
-	if err != nil {
-		return err
-	}
-
-	for _, item := range outShares.Items {
-		var s domain.Share
-		if err := attributevalue.UnmarshalMap(item, &s); err != nil {
-			return err
-		}
-		_, err = r.client.DeleteItem(ctx, &dynamodb.DeleteItemInput{
-			TableName: &r.sharesTable,
-			Key: map[string]types.AttributeValue{
-				"userId":       &types.AttributeValueMemberS{Value: s.UserID},
-				"cheatsheetId": &types.AttributeValueMemberS{Value: s.CheatsheetID},
-			},
-		})
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (r *DynamoDBRepository) FindCheatsheetByKey(ctx context.Context, key string) (domain.Cheatsheet, error) {
-	out, err := r.client.Query(ctx, &dynamodb.QueryInput{
-		TableName:              &r.cheatsheetsTable,
-		IndexName:              aws.String("key-index"),
-		KeyConditionExpression: aws.String("#k = :v"),
-		ExpressionAttributeNames: map[string]string{
-			"#k": "key",
-		},
-		ExpressionAttributeValues: map[string]types.AttributeValue{
-			":v": &types.AttributeValueMemberS{Value: key},
-		},
-	})
-	if err != nil {
-		return domain.Cheatsheet{}, err
-	}
-	if len(out.Items) == 0 {
-		return domain.Cheatsheet{}, domain.ErrNotFound
-	}
-
-	var c domain.Cheatsheet
-	if err := attributevalue.UnmarshalMap(out.Items[0], &c); err != nil {
-		return domain.Cheatsheet{}, err
+		return domain.File{}, err
 	}
 	return c, nil
-}
-
-func (r *DynamoDBRepository) DeleteSharesByCheatsheetID(ctx context.Context, cheatsheetId string) error {
-	out, err := r.client.Query(ctx, &dynamodb.QueryInput{
-		TableName:              &r.sharesTable,
-		IndexName:              aws.String("cheatsheetId-index"),
-		KeyConditionExpression: aws.String("cheatsheetId = :cid"),
-		ExpressionAttributeValues: map[string]types.AttributeValue{
-			":cid": &types.AttributeValueMemberS{Value: cheatsheetId},
-		},
-	})
-	if err != nil {
-		return err
-	}
-
-	for _, item := range out.Items {
-		var s domain.Share
-		if err := attributevalue.UnmarshalMap(item, &s); err != nil {
-			return err
-		}
-		_, err = r.client.DeleteItem(ctx, &dynamodb.DeleteItemInput{
-			TableName: &r.sharesTable,
-			Key: map[string]types.AttributeValue{
-				"userId":       &types.AttributeValueMemberS{Value: s.UserID},
-				"cheatsheetId": &types.AttributeValueMemberS{Value: s.CheatsheetID},
-			},
-		})
-		if err != nil {
-			return err
-		}
-	}
-	return nil
 }
