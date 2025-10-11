@@ -8,15 +8,19 @@ use crate::proto::user::{
 use crate::services::oauth::OAuthService;
 use crate::services::user::UserService;
 use log::error;
+use std::sync::Arc;
 
 #[derive(Debug)]
 pub struct AuthService {
-    user_service: UserService,
+    user_service: Arc<UserService>,
     oauth_service: OAuthService,
 }
 
 impl AuthService {
-    pub fn new(user_service: UserService, oauth_service: OAuthService) -> anyhow::Result<Self> {
+    pub fn new(
+        user_service: Arc<UserService>,
+        oauth_service: OAuthService,
+    ) -> anyhow::Result<Self> {
         Ok(Self {
             user_service,
             oauth_service,

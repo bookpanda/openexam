@@ -1,14 +1,17 @@
 use crate::proto::user::user_server::{User, UserServer};
 use crate::proto::user::{
-    GetGoogleLoginUrlReply, GetGoogleLoginUrlRequest, LoginReply, LoginRequest, ValidateTokenReply,
-    ValidateTokenRequest,
+    GetAllUsersReply, GetAllUsersRequest, GetGoogleLoginUrlReply, GetGoogleLoginUrlRequest,
+    LoginReply, LoginRequest, ValidateTokenReply, ValidateTokenRequest,
 };
 use crate::services::auth::AuthService;
+use crate::services::user::UserService;
+use std::sync::Arc;
 use tonic::{Request, Response, Status};
 
 #[derive(Debug)]
 pub struct MyUser {
     pub auth_service: AuthService,
+    pub user_service: Arc<UserService>,
 }
 
 #[tonic::async_trait]
@@ -30,14 +33,27 @@ impl User for MyUser {
     ) -> Result<Response<ValidateTokenReply>, Status> {
         self.auth_service.validate_token(request).await
     }
-}
 
-impl MyUser {
-    pub fn new(auth_service: AuthService) -> Self {
-        Self { auth_service }
+    async fn get_all_users(
+        &self,
+        _: Request<GetAllUsersRequest>,
+    ) -> Result<Response<GetAllUsersReply>, Status> {
+        self.user_service.get_all().await
     }
 }
 
-pub fn auth_server(auth_service: AuthService) -> UserServer<MyUser> {
-    UserServer::new(MyUser::new(auth_service))
+impl MyUser {
+    pub fn new(auth_service: AuthService, user_service: Arc<UserService>) -> Self {
+        Self {
+            auth_service,
+            user_service,
+        }
+    }
+}
+
+pub fn auth_server(
+    auth_service: AuthService,
+    user_service: Arc<UserService>,
+) -> UserServer<MyUser> {
+    UserServer::new(MyUser::new(auth_service, user_service))
 }
