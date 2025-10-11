@@ -12,6 +12,7 @@ resource "aws_lambda_function" "generator" {
 
   environment {
     variables = {
+      AWS_REGION                = var.region
       BUCKET_NAME               = var.bucket_name
       SOURCE_PREFIX             = "slide"
       TARGET_PREFIX             = "cheatsheets"

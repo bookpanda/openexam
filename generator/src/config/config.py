@@ -22,11 +22,11 @@ class Config:
         "application/xml",
     )
 
-    @classmethod
-    def validate(cls) -> None:
-        if not cls.BUCKET_NAME:
-            raise ValueError("BUCKET_NAME environment variable is required")
-        if not cls.FILES_TABLE_NAME:
-            raise ValueError("FILES_TABLE_NAME environment variable is required")
-        if not cls.SHARES_TABLE_NAME:
-            raise ValueError("SHARES_TABLE_NAME environment variable is required")
+    # @classmethod
+    # def validate(cls) -> None:
+    #     if not cls.BUCKET_NAME:
+    #         raise ValueError("BUCKET_NAME environment variable is required")
+    #     if not cls.FILES_TABLE_NAME:
+    #         raise ValueError("FILES_TABLE_NAME environment variable is required")
+    #     if not cls.SHARES_TABLE_NAME:
+    #         raise ValueError("SHARES_TABLE_NAME environment variable is required")

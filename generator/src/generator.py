@@ -39,7 +39,7 @@ def handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
         }
     """
     try:
-        Config.validate()
+        # Config.validate()
         sqs_handler = SQSHandler()
 
         return sqs_handler.handle_event(event)

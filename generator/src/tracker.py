@@ -53,7 +53,7 @@ def handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
     """
     try:
         # Validate configuration
-        Config.validate()
+        # Config.validate()
 
         # Process S3 events
         s3_handler = S3Handler()
