@@ -42,7 +42,7 @@ docker pull --platform=linux/amd64 ghcr.io/bookpanda/openexam-cheatsheet:latest
 
 ### Deploying Lambda changes
 ```bash
-./deploy_lambdas.sh
+source .env.terraform && ./deploy_lambdas.sh
 ```
 
 ## API

@@ -28,6 +28,7 @@ module "lambda" {
   files_table_arn    = module.dynamodb.files_table_arn
   shares_table_name  = module.dynamodb.shares_table_name
   shares_table_arn   = module.dynamodb.shares_table_arn
+  gemini_api_key     = var.gemini_api_key
 }
 
 module "iam" {

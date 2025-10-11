@@ -15,6 +15,7 @@ resource "aws_lambda_function" "tracker" {
       BUCKET_NAME       = var.bucket_name
       FILES_TABLE_NAME  = var.files_table_name
       SHARES_TABLE_NAME = var.shares_table_name
+      GEMINI_API_KEY    = var.gemini_api_key
     }
   }
 }

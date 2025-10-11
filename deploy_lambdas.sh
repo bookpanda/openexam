@@ -4,6 +4,14 @@ set -e
 echo "🚀 Deploying Lambda Functions with Dependencies"
 echo "================================================"
 
+# Check for required environment variable
+if [ -z "$TF_VAR_gemini_api_key" ]; then
+    echo "❌ Error: TF_VAR_gemini_api_key environment variable is not set"
+    echo "Please export your Gemini API key:"
+    echo "  export TF_VAR_gemini_api_key=\"your-api-key-here\""
+    exit 1
+fi
+
 # Step 1: Build Lambda packages
 echo ""
 echo "📦 Step 1: Building Lambda packages with dependencies..."

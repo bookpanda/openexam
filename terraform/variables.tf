@@ -7,3 +7,9 @@ variable "app_name" {
   description = "The name of the app"
   type        = string
 }
+
+variable "gemini_api_key" {
+  description = "Google Gemini API key for AI generation"
+  type        = string
+  sensitive   = true
+}
