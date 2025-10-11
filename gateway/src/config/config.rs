@@ -16,6 +16,7 @@ pub struct ServerConfig {
     pub gateway_host: String,
     pub gateway_port: u16,
     pub user_grpc_url: String,
+    pub cheatsheet_api_url: String,
 }
 
 impl Config {
@@ -46,6 +47,8 @@ impl ServerConfig {
                 .parse()?,
             user_grpc_url: env::var("USER_GRPC_URL")
                 .unwrap_or_else(|_| "http://127.0.0.1:50051".to_string()),
+            cheatsheet_api_url: env::var("CHEATSHEET_API_URL")
+                .unwrap_or_else(|_| "http://127.0.0.1:3002".to_string()),
         })
     }
 }
