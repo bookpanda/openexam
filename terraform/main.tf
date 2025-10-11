@@ -31,8 +31,10 @@ module "lambda" {
 }
 
 module "iam" {
-  source        = "./modules/iam"
-  app_name      = var.app_name
-  s3_policy_arn = module.s3.s3_policy_arn
+  source             = "./modules/iam"
+  app_name           = var.app_name
+  s3_policy_arn      = module.s3.s3_policy_arn
+  request_queue_arn  = module.sqs.request_queue_arn
+  response_queue_arn = module.sqs.response_queue_arn
 }
 
