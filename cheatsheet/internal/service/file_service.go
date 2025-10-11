@@ -14,17 +14,25 @@ import (
 	"github.com/google/uuid"
 )
 
-type FileServiceImpl struct {
-	repo        domain.FileRepository     // S3
-	metaRepo    domain.MetadataRepository // DynamoDB
-	maxUploadMB int64
+type SQSPublisher interface {
+	PublishGenerateRequest(ctx context.Context, fileIDs []string, userID string, requestID string) error
 }
 
-func NewFileService(repo domain.FileRepository, metaRepo domain.MetadataRepository, maxUploadMB int64) domain.FileService {
+type FileServiceImpl struct {
+	repo              domain.FileRepository     // S3
+	metaRepo          domain.MetadataRepository // DynamoDB
+	sqsPublisher      SQSPublisher
+	generationTracker *GenerationTracker
+	maxUploadMB       int64
+}
+
+func NewFileService(repo domain.FileRepository, metaRepo domain.MetadataRepository, sqsPublisher SQSPublisher, generationTracker *GenerationTracker, maxUploadMB int64) domain.FileService {
 	return &FileServiceImpl{
-		repo:        repo,
-		metaRepo:    metaRepo,
-		maxUploadMB: maxUploadMB,
+		repo:              repo,
+		metaRepo:          metaRepo,
+		sqsPublisher:      sqsPublisher,
+		generationTracker: generationTracker,
+		maxUploadMB:       maxUploadMB,
 	}
 }
 
@@ -89,4 +97,23 @@ func (s *FileServiceImpl) GetPresignedUploadURL(ctx context.Context, userId stri
 		return "", "", err
 	}
 	return result, key, nil
+}
+
+func (s *FileServiceImpl) Generate(ctx context.Context, fileIDs []string, userId string) (domain.GenerateResult, error) {
+	requestID := uuid.NewString()
+	resultCh := s.generationTracker.Register(requestID)
+
+	if err := s.sqsPublisher.PublishGenerateRequest(ctx, fileIDs, userId, requestID); err != nil {
+		return domain.GenerateResult{}, err
+	}
+
+	result, err := s.generationTracker.Wait(ctx, requestID, resultCh)
+	if err != nil {
+		return domain.GenerateResult{}, err
+	}
+
+	return domain.GenerateResult{
+		FileID: result.FileID,
+		Key:    result.Key,
+	}, nil
 }
