@@ -141,7 +141,7 @@ impl CheatsheetService {
         ApiResponse::ok(types::EmptyResponse {})
     }
 
-    pub async fn get_all_files(&self, user_id: String) -> ApiResponse<Vec<dtos::File>> {
+    pub async fn get_all_files(&self, user_id: String) -> ApiResponse<dtos::GetAllFilesResponse> {
         let url = format!("{}/files", self.cheatsheet_api_url);
 
         let request = self.client.get(&url).header("X-User-Id", user_id);
@@ -168,7 +168,7 @@ impl CheatsheetService {
             })
             .collect();
 
-        ApiResponse::ok(files)
+        ApiResponse::ok(dtos::GetAllFilesResponse { files })
     }
 
     pub async fn share(

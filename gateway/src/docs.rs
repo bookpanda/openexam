@@ -14,6 +14,8 @@ use utoipa::{
         crate::handlers::cheatsheet::get_presigned_get_url,
         crate::handlers::cheatsheet::remove,
         crate::handlers::cheatsheet::get_all_files,
+        crate::handlers::cheatsheet::share,
+        crate::handlers::cheatsheet::unshare,
     ),
     components(schemas(
         crate::dtos::ValidateTokenRequest,
@@ -23,6 +25,10 @@ use utoipa::{
         crate::dtos::GetPresignedUploadUrlResponse,
         crate::dtos::GetPresignedGetUrlResponse,
         crate::dtos::RemoveFileQuery,
+        crate::dtos::ShareRequest,
+        crate::dtos::ShareResponse,
+        crate::dtos::UnshareRequest,
+        crate::dtos::UnshareResponse,
     )),
     info(
         title = "openexam",

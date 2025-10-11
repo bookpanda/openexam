@@ -1,4 +1,4 @@
-use axum::Json;
+use axum::{Json, response::IntoResponse};
 use hyper::StatusCode;
 use serde::Serialize;
 
@@ -32,7 +32,10 @@ impl<T> ApiResponse<T> {
         }
     }
 
-    pub fn into_axum_response(self) -> (StatusCode, Json<Self>) {
+    pub fn into_axum_response(self) -> impl IntoResponse
+    where
+        T: Serialize,
+    {
         let status = match &self {
             ApiResponse::Success(_) => StatusCode::OK,
             ApiResponse::Error { status, .. } => {
