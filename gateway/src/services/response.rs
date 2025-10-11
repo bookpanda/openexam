@@ -18,6 +18,13 @@ impl<T> ApiResponse<T> {
         ApiResponse::Success(data)
     }
 
+    pub fn error(status: u16, msg: &str) -> Self {
+        ApiResponse::Error {
+            status,
+            message: msg.to_string(),
+        }
+    }
+
     pub fn not_found(msg: &str) -> Self {
         ApiResponse::Error {
             status: StatusCode::NOT_FOUND.as_u16(),

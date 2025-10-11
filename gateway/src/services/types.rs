@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Deserialize)]
 pub struct ServiceResponse<T> {
     pub data: T,
-    pub success: bool,
+    // pub success: bool,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

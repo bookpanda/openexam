@@ -32,16 +32,23 @@ impl CheatsheetService {
     async fn parse_json<T: serde::de::DeserializeOwned>(
         &self,
         response: reqwest::Response,
-    ) -> Result<T, String> {
+    ) -> Result<T, (u16, String)> {
+        let status_code = response.status().as_u16();
+
         if !response.status().is_success() {
-            let status = response.status();
-            error!("Request failed with status: {}", status);
-            return Err(format!("Request failed with status: {}", status));
+            // Try to get error message from response body
+            let error_body = response
+                .text()
+                .await
+                .unwrap_or_else(|_| "Unknown error".to_string());
+
+            error!("Request failed with status {}: {}", status_code, error_body);
+            return Err((status_code, error_body));
         }
 
         response.json::<T>().await.map_err(|e| {
             error!("Failed to parse response: {:?}", e);
-            format!("Failed to parse response: {:?}", e)
+            (status_code, format!("Failed to parse response: {:?}", e))
         })
     }
 
@@ -65,7 +72,7 @@ impl CheatsheetService {
         let data: types::ServiceResponse<types::GetPresignedUploadUrlData> =
             match self.parse_json(response).await {
                 Ok(d) => d,
-                Err(e) => return ApiResponse::internal_error(&e),
+                Err((status, msg)) => return ApiResponse::error(status, &msg),
             };
 
         let result = dtos::GetPresignedUploadUrlResponse {
@@ -96,7 +103,7 @@ impl CheatsheetService {
         let data: types::ServiceResponse<types::GetPresignedGetUrlData> =
             match self.parse_json(response).await {
                 Ok(d) => d,
-                Err(e) => return ApiResponse::internal_error(&e),
+                Err((status, msg)) => return ApiResponse::error(status, &msg),
             };
 
         let result = dtos::GetPresignedGetUrlResponse {
@@ -152,7 +159,7 @@ impl CheatsheetService {
 
         let data: types::ServiceResponse<types::FilesData> = match self.parse_json(response).await {
             Ok(d) => d,
-            Err(e) => return ApiResponse::internal_error(&e),
+            Err((status, msg)) => return ApiResponse::error(status, &msg),
         };
 
         let files = data
@@ -191,7 +198,7 @@ impl CheatsheetService {
 
         let data: types::ServiceResponse<types::ShareData> = match self.parse_json(response).await {
             Ok(d) => d,
-            Err(e) => return ApiResponse::internal_error(&e),
+            Err((status, msg)) => return ApiResponse::error(status, &msg),
         };
 
         ApiResponse::ok(dtos::ShareResponse {
@@ -220,7 +227,7 @@ impl CheatsheetService {
         let data: types::ServiceResponse<types::UnshareData> = match self.parse_json(response).await
         {
             Ok(d) => d,
-            Err(e) => return ApiResponse::internal_error(&e),
+            Err((status, msg)) => return ApiResponse::error(status, &msg),
         };
 
         ApiResponse::ok(dtos::UnshareResponse {
