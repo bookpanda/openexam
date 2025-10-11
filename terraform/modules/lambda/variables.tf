@@ -47,3 +47,9 @@ variable "shares_table_arn" {
   description = "DynamoDB shares table ARN"
   type        = string
 }
+
+variable "gemini_api_key" {
+  description = "Google Gemini API key for AI generation"
+  type        = string
+  sensitive   = true
+}

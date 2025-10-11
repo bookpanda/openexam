@@ -18,6 +18,7 @@ resource "aws_lambda_function" "generator" {
       FILES_TABLE_NAME          = var.files_table_name
       MAX_CONTENT_PREVIEW_CHARS = "500"
       MAX_BINARY_PREVIEW_BYTES  = "100"
+      GEMINI_API_KEY            = var.gemini_api_key
     }
   }
 }

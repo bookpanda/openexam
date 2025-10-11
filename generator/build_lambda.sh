@@ -12,9 +12,15 @@ echo "🧹 Cleaning previous builds..."
 rm -rf build/
 mkdir -p build/lambda_package
 
-# Install dependencies
-echo "📦 Installing Python dependencies..."
-pip install -r requirements.txt -t build/lambda_package/ --quiet
+# Install dependencies using Docker for Linux compatibility
+echo "📦 Installing Python dependencies (Linux x86_64)..."
+docker run --rm \
+  --platform linux/amd64 \
+  --entrypoint "" \
+  -v "$PWD":/var/task \
+  -w /var/task \
+  public.ecr.aws/lambda/python:3.12 \
+  pip install -r requirements.txt -t build/lambda_package/ --quiet
 
 # Copy source code
 echo "📁 Copying source code..."

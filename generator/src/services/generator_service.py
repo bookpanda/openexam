@@ -14,7 +14,7 @@ from config import Config
 from services.pdf_service import PDFService
 from services.s3_service import S3Service
 from utils.logger import setup_logger
-
+from services.cheatsheet_service import generate_cheatsheet
 logger = setup_logger(__name__)
 
 
@@ -72,24 +72,23 @@ class GeneratorService:
             if not pdf_contents:
                 raise Exception("No valid PDF files found to merge")
 
-            # 3. Merge PDFs
-            logger.info(f"Merging {len(pdf_contents)} PDFs")
-            merged_pdf = self.pdf_service.merge_pdfs(pdf_contents)
-
-            # 4. Upload merged PDF to S3
+            # 3. Generate Cheatsheet PDFs
+            logger.info(f"Generating Cheatsheet from {len(pdf_contents)} PDFs")
+            cheatsheet = generate_cheatsheet(pdf_contents)
+            # 4. Upload Cheatsheet PDF to S3
             prefix = uuid.uuid4().hex[:6]
             output_key = f"cheatsheets/{user_id}/{prefix}_cheatsheet.pdf"
             logger.info(f"Uploading merged PDF to S3: {output_key}")
 
             self.s3_service.put_object(
-                key=output_key, body=merged_pdf, content_type="application/pdf"
+                key=output_key, body=cheatsheet, content_type="application/pdf"
             )
 
             result = {
                 "key": output_key,
                 "user_id": user_id,
                 "source_file_count": len(pdf_contents),
-                "size": len(merged_pdf),
+                "size": len(cheatsheet),
                 "file_id": uuid.uuid4().hex,
             }
 
