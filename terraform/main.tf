@@ -36,5 +36,7 @@ module "iam" {
   s3_policy_arn      = module.s3.s3_policy_arn
   request_queue_arn  = module.sqs.request_queue_arn
   response_queue_arn = module.sqs.response_queue_arn
+  files_table_arn    = module.dynamodb.files_table_arn
+  shares_table_arn   = module.dynamodb.shares_table_arn
 }
 
