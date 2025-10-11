@@ -13,7 +13,7 @@ services:
       - GATEWAY_HOST=0.0.0.0
       - GATEWAY_PORT=3001
       - USER_GRPC_URL=http://openexam-user:50051
-      - CHEATSHEET_API_URL=http://localhost:3002
+      - CHEATSHEET_API_URL=http://openexam-cheatsheet:3002
     ports:
       - 3001:3001
     networks:
@@ -63,7 +63,7 @@ services:
       - S3_BUCKET=${S3_BUCKET}
       - MAX_UPLOAD_MB=20
     ports:
-      - 3000:3000
+      - 3002:3002
     networks:
       - openexam
 

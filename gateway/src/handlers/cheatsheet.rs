@@ -20,8 +20,9 @@ impl CheatsheetHandler {
     get,
     path = "/api/cheatsheet/presigned/upload",
     tag = "Cheatsheet",
+    description = "Generate a presigned URL for uploading a file to S3. The URL expires after a set time.",
     params(
-        ("filename" = String, Query, description = "Filename for the upload"),
+        ("filename" = String, Query, description = "Filename for the upload e.g. slide1.pdf"),
     ),
     responses(
         (status = 200, description = "Success", body = dtos::GetPresignedUploadUrlResponse),
@@ -45,8 +46,9 @@ pub async fn get_presigned_upload_url(
     get,
     path = "/api/cheatsheet/presigned",
     tag = "Cheatsheet",
+    description = "Generate a presigned URL for downloading a file from S3. The URL expires after a set time.",
     params(
-        ("key" = String, Query, description = "Full key in S3"),
+        ("key" = String, Query, description = "Full key in S3 e.g. slides/1/4e8d92_test.pdf"),
     ),
     responses(
         (status = 200, description = "Success", body = dtos::GetPresignedGetUrlResponse),
@@ -70,9 +72,10 @@ pub async fn get_presigned_get_url(
     delete,
     path = "/api/cheatsheet/files",
     tag = "Cheatsheet",
+    description = "Delete a file from S3 and remove all associated shares from DynamoDB.",
     params(
-        ("file_type" = String, Query, description = "File type (slide or cheatsheet)"),
-        ("file" = String, Query, description = "Filename to delete"),
+        ("file_type" = String, Query, description = "File type (`slides` or `cheatsheets`)"),
+        ("file" = String, Query, description = "Filename to delete e.g. 82a354_test.pdf"),
     ),
     responses(
         (status = 200, description = "File deleted successfully"),
@@ -96,6 +99,7 @@ pub async fn remove(
     get,
     path = "/api/cheatsheet/files",
     tag = "Cheatsheet",
+    description = "Get all files that are shared with the current user, including files they own.",
     responses(
         (status = 200, description = "List of all user files", body = dtos::GetAllFilesResponse),
         (status = 500, description = "Internal server error"),
@@ -116,6 +120,7 @@ pub async fn get_all_files(
     post,
     path = "/api/cheatsheet/share",
     tag = "Cheatsheet",
+    description = "Share your file with another user. Creates a share record in DynamoDB. Your user id is determined from the Auth header.",
     request_body = dtos::ShareRequest,
     responses(
         (status = 200, description = "File shared successfully", body = dtos::ShareResponse),
@@ -138,6 +143,7 @@ pub async fn share(
     post,
     path = "/api/cheatsheet/unshare",
     tag = "Cheatsheet",
+    description = "Revoke a user's access to a file. Removes the share record from DynamoDB. Your user id is determined from the Auth header.",
     request_body = dtos::UnshareRequest,
     responses(
         (status = 200, description = "File unshared successfully", body = dtos::UnshareResponse),
@@ -160,6 +166,7 @@ pub async fn unshare(
     post,
     path = "/api/cheatsheet/generate",
     tag = "Cheatsheet",
+    description = "Generate a combined PDF from multiple files you have access to. Sends a request to SQS and waits for the Lambda to process and merge the PDFs. Returns the key of the generated file.",
     request_body = dtos::GenerateRequest,
     responses(
         (status = 200, description = "Generation request accepted", body = dtos::GenerateResponse),
