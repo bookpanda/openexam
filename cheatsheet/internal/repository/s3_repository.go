@@ -41,26 +41,6 @@ func (r *S3Repository) Put(ctx context.Context, key string, rd io.Reader, size i
 	return nil
 }
 
-func (r *S3Repository) Get(ctx context.Context, key string) (io.ReadCloser, int64, string, error) {
-	out, err := r.client.GetObject(ctx, &s3.GetObjectInput{
-		Bucket: &r.bucket,
-		Key:    &key,
-	})
-	if err != nil {
-		return nil, 0, "", domain.ErrNotFound
-	}
-	// กัน nil
-	ct := "application/octet-stream"
-	if out.ContentType != nil {
-		ct = *out.ContentType
-	}
-	var contentLength int64
-	if out.ContentLength != nil {
-		contentLength = *out.ContentLength
-	}
-	return out.Body, contentLength, ct, nil
-}
-
 func (r *S3Repository) Delete(ctx context.Context, key string) error {
 	_, err := r.client.DeleteObject(ctx, &s3.DeleteObjectInput{
 		Bucket: &r.bucket,

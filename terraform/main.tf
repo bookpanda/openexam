@@ -17,12 +17,17 @@ module "dynamodb" {
 }
 
 module "lambda" {
-  source                 = "./modules/lambda"
-  app_name               = var.app_name
-  bucket_name            = module.s3.bucket_name
-  queue_arn              = module.sqs.queue_arn
-  cheatsheets_table_name = module.dynamodb.cheatsheets_table_name
-  cheatsheets_table_arn  = module.dynamodb.cheatsheets_table_arn
+  source             = "./modules/lambda"
+  app_name           = var.app_name
+  bucket_name        = module.s3.bucket_name
+  bucket_id          = module.s3.bucket_id
+  request_queue_arn  = module.sqs.request_queue_arn
+  response_queue_arn = module.sqs.response_queue_arn
+  response_queue_url = module.sqs.response_queue_url
+  files_table_name   = module.dynamodb.files_table_name
+  files_table_arn    = module.dynamodb.files_table_arn
+  shares_table_name  = module.dynamodb.shares_table_name
+  shares_table_arn   = module.dynamodb.shares_table_arn
 }
 
 module "iam" {
