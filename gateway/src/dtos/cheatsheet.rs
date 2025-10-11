@@ -60,7 +60,29 @@ pub struct File {
     pub key: String,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, ToSchema)]
 pub struct GetAllFilesResponse {
     pub files: Vec<File>,
+}
+
+#[derive(Deserialize, ToSchema)]
+pub struct ShareRequest {
+    pub user_id: String,
+    pub file_id: String,
+}
+
+#[derive(Deserialize, ToSchema)]
+pub struct ShareResponse {
+    pub shared: bool,
+}
+
+#[derive(Deserialize, ToSchema)]
+pub struct UnshareRequest {
+    pub user_id: String,
+    pub file_id: String,
+}
+
+#[derive(Deserialize, ToSchema)]
+pub struct UnshareResponse {
+    pub unshared: bool,
 }

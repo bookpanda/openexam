@@ -170,4 +170,61 @@ impl CheatsheetService {
 
         ApiResponse::ok(files)
     }
+
+    pub async fn share(
+        &self,
+        owner_id: String,
+        user_id: String,
+        file_id: String,
+    ) -> ApiResponse<dtos::ShareResponse> {
+        let url = format!("{}/share", self.cheatsheet_api_url);
+
+        let request = self
+            .client
+            .post(&url)
+            .header("X-User-Id", owner_id)
+            .form(&[("user_id", user_id), ("file_id", file_id)]);
+        let response = match self.send_request(request).await {
+            Ok(r) => r,
+            Err(e) => return ApiResponse::internal_error(&e),
+        };
+
+        let data: types::ServiceResponse<types::ShareData> = match self.parse_json(response).await {
+            Ok(d) => d,
+            Err(e) => return ApiResponse::internal_error(&e),
+        };
+
+        ApiResponse::ok(dtos::ShareResponse {
+            shared: data.data.shared,
+        })
+    }
+
+    pub async fn unshare(
+        &self,
+        owner_id: String,
+        user_id: String,
+        file_id: String,
+    ) -> ApiResponse<dtos::UnshareResponse> {
+        let url = format!("{}/unshare", self.cheatsheet_api_url);
+
+        let request = self
+            .client
+            .post(&url)
+            .header("X-User-Id", owner_id)
+            .query(&[("user_id", user_id), ("file_id", file_id)]);
+        let response = match self.send_request(request).await {
+            Ok(r) => r,
+            Err(e) => return ApiResponse::internal_error(&e),
+        };
+
+        let data: types::ServiceResponse<types::UnshareData> = match self.parse_json(response).await
+        {
+            Ok(d) => d,
+            Err(e) => return ApiResponse::internal_error(&e),
+        };
+
+        ApiResponse::ok(dtos::UnshareResponse {
+            unshared: data.data.unshared,
+        })
+    }
 }

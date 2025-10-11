@@ -38,3 +38,13 @@ pub struct File {
 pub struct FilesData {
     pub files: Vec<File>,
 }
+
+#[derive(Debug, Deserialize)]
+pub struct ShareData {
+    pub shared: bool,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct UnshareData {
+    pub unshared: bool,
+}

@@ -1,6 +1,7 @@
 use crate::dtos::{self, PresignGetQuery, PresignUploadQuery, RemoveFileQuery};
 use crate::extractors::UserId;
 use crate::services::cheatsheet::CheatsheetService;
+use axum::Json;
 use axum::extract::{Query, State};
 use axum::response::IntoResponse;
 
@@ -96,7 +97,7 @@ pub async fn remove(
     path = "/api/cheatsheet/files",
     tag = "Cheatsheet",
     responses(
-        (status = 200, description = "List of all user files"),
+        (status = 200, description = "List of all user files", body = dtos::GetAllFilesResponse),
         (status = 500, description = "Internal server error"),
     ),
 )]
@@ -107,6 +108,50 @@ pub async fn get_all_files(
     handler
         .cheatsheet_service
         .get_all_files(user_id)
+        .await
+        .into_axum_response()
+}
+
+#[utoipa::path(
+    post,
+    path = "/api/cheatsheet/share",
+    tag = "Cheatsheet",
+    request_body = dtos::ShareRequest,
+    responses(
+        (status = 200, description = "File shared successfully", body = dtos::ShareResponse),
+        (status = 500, description = "Internal server error"),
+    ),
+)]
+pub async fn share(
+    State(handler): State<CheatsheetHandler>,
+    UserId(owner_id): UserId,
+    Json(body): Json<dtos::ShareRequest>,
+) -> impl IntoResponse {
+    handler
+        .cheatsheet_service
+        .share(owner_id, body.user_id, body.file_id)
+        .await
+        .into_axum_response()
+}
+
+#[utoipa::path(
+    post,
+    path = "/api/cheatsheet/unshare",
+    tag = "Cheatsheet",
+    request_body = dtos::UnshareRequest,
+    responses(
+        (status = 200, description = "File unshared successfully", body = dtos::UnshareResponse),
+        (status = 500, description = "Internal server error"),
+    ),
+)]
+pub async fn unshare(
+    State(handler): State<CheatsheetHandler>,
+    UserId(owner_id): UserId,
+    Json(body): Json<dtos::UnshareRequest>,
+) -> impl IntoResponse {
+    handler
+        .cheatsheet_service
+        .unshare(owner_id, body.user_id, body.file_id)
         .await
         .into_axum_response()
 }

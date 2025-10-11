@@ -20,10 +20,6 @@ pub fn cheatsheet_routes() -> Router<CheatsheetHandler> {
             "/cheatsheet/files", // get all my files (slides + cheatsheets)
             get(handlers::cheatsheet::get_all_files),
         )
-    // .route(
-    //     "/cheatsheet/files/presign",
-    //     get(handlers::cheatsheet::get_presigned_url),
-    // )
-    // .route("/cheatsheet/share", get(handlers::cheatsheet::share))
-    // .route("/cheatsheet/unshare", get(handlers::cheatsheet::unshare))
+        .route("/cheatsheet/share", get(handlers::cheatsheet::share))
+        .route("/cheatsheet/unshare", get(handlers::cheatsheet::unshare))
 }
