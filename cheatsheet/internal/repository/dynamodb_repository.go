@@ -129,62 +129,6 @@ func (r *DynamoDBRepository) UnshareFile(ctx context.Context, userId, key string
 	return err
 }
 
-// func (r *DynamoDBRepository) DeleteSharesByKey(ctx context.Context, key string) error {
-// 	out, err := r.client.Query(ctx, &dynamodb.QueryInput{
-// 		TableName:              &r.filesTable,
-// 		IndexName:              aws.String("KeyIndex"),
-// 		KeyConditionExpression: aws.String("#k = :v"),
-// 		ExpressionAttributeNames: map[string]string{
-// 			"#k": "key",
-// 		},
-// 		ExpressionAttributeValues: map[string]types.AttributeValue{
-// 			":v": &types.AttributeValueMemberS{Value: key},
-// 		},
-// 	})
-// 	if err != nil {
-// 		return err
-// 	}
-// 	if len(out.Items) == 0 {
-// 		return nil
-// 	}
-
-// 	var c domain.File
-// 	if err := attributevalue.UnmarshalMap(out.Items[0], &c); err != nil {
-// 		return err
-// 	}
-
-// 	// list shares, userId+key with FileIdIndex GSI
-// 	outShares, err := r.client.Query(ctx, &dynamodb.QueryInput{
-// 		TableName:              &r.sharesTable,
-// 		IndexName:              aws.String("FileIdIndex"), // GSI
-// 		KeyConditionExpression: aws.String("fileId = :fid"),
-// 		ExpressionAttributeValues: map[string]types.AttributeValue{
-// 			":fid": &types.AttributeValueMemberS{Value: c.ID},
-// 		},
-// 	})
-// 	if err != nil {
-// 		return err
-// 	}
-
-// 	for _, item := range outShares.Items {
-// 		var s domain.Share
-// 		if err := attributevalue.UnmarshalMap(item, &s); err != nil {
-// 			return err
-// 		}
-// 		_, err = r.client.DeleteItem(ctx, &dynamodb.DeleteItemInput{
-// 			TableName: &r.sharesTable,
-// 			Key: map[string]types.AttributeValue{
-// 				"userId": &types.AttributeValueMemberS{Value: s.UserID},
-// 				"key":    &types.AttributeValueMemberS{Value: s.Key},
-// 			},
-// 		})
-// 		if err != nil {
-// 			return err
-// 		}
-// 	}
-// 	return nil
-// }
-
 func (r *DynamoDBRepository) FindFileByKey(ctx context.Context, key string) (domain.File, error) {
 	out, err := r.client.Query(ctx, &dynamodb.QueryInput{
 		TableName:              &r.filesTable,
@@ -209,36 +153,4 @@ func (r *DynamoDBRepository) FindFileByKey(ctx context.Context, key string) (dom
 		return domain.File{}, err
 	}
 	return c, nil
-}
-
-func (r *DynamoDBRepository) DeleteSharesByFileID(ctx context.Context, fileId string) error {
-	out, err := r.client.Query(ctx, &dynamodb.QueryInput{
-		TableName:              &r.sharesTable,
-		IndexName:              aws.String("FileIdIndex"),
-		KeyConditionExpression: aws.String("fileId = :fid"),
-		ExpressionAttributeValues: map[string]types.AttributeValue{
-			":fid": &types.AttributeValueMemberS{Value: fileId},
-		},
-	})
-	if err != nil {
-		return err
-	}
-
-	for _, item := range out.Items {
-		var s domain.Share
-		if err := attributevalue.UnmarshalMap(item, &s); err != nil {
-			return err
-		}
-		_, err = r.client.DeleteItem(ctx, &dynamodb.DeleteItemInput{
-			TableName: &r.sharesTable,
-			Key: map[string]types.AttributeValue{
-				"userId": &types.AttributeValueMemberS{Value: s.UserID},
-				"key":    &types.AttributeValueMemberS{Value: s.Key},
-			},
-		})
-		if err != nil {
-			return err
-		}
-	}
-	return nil
 }

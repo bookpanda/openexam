@@ -16,7 +16,7 @@ type FileHandler struct {
 
 func NewFileHandler(svc domain.FileService) *FileHandler { return &FileHandler{svc: svc} }
 
-func (h *FileHandler) Upload(c *fiber.Ctx) error {
+func (h *FileHandler) Generate(c *fiber.Ctx) error {
 	fileHeader, err := c.FormFile("file")
 	if err != nil {
 		return httpx.BadRequest(c, "file is required")
@@ -47,22 +47,6 @@ func (h *FileHandler) Upload(c *fiber.Ctx) error {
 	}
 
 	return httpx.Ok(c, fiber.Map{"key": obj.Key, "size": obj.Size, "contentType": obj.ContentType})
-}
-
-func (h *FileHandler) Download(c *fiber.Ctx) error {
-	key := c.Query("key")
-	if key == "" {
-		return httpx.BadRequest(c, "key is required")
-	}
-
-	rc, _, contentType, err := h.svc.Download(c.Context(), key)
-	if err != nil {
-		return httpx.FromDomainError(c, err)
-	}
-	defer rc.Close()
-
-	c.Set("Content-Type", contentType)
-	return c.SendStream(rc)
 }
 
 func (h *FileHandler) Remove(c *fiber.Ctx) error {

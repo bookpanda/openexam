@@ -57,10 +57,6 @@ func (s *FileServiceImpl) Upload(ctx context.Context, userId, filename string, c
 	return fileObj, nil
 }
 
-func (s *FileServiceImpl) Download(ctx context.Context, key string) (io.ReadCloser, int64, string, error) {
-	return s.repo.Get(ctx, key)
-}
-
 func (s *FileServiceImpl) Remove(ctx context.Context, fileType string, userId string, file string) error {
 	key := fmt.Sprintf("%s/%s/%s", fileType, userId, file)
 
