@@ -3,7 +3,7 @@ use std::sync::Arc;
 use tonic::transport::Channel;
 
 use crate::dtos;
-use crate::proto::user::ValidateTokenRequest;
+use crate::proto::user::{GetAllUsersRequest, ValidateTokenRequest};
 use crate::{
     proto::user::{GetGoogleLoginUrlRequest, LoginRequest, user_client::UserClient},
     services::response::ApiResponse,
@@ -75,6 +75,29 @@ impl UserService {
             Err(e) => {
                 error!("Validate token error: {:?}", e);
                 ApiResponse::internal_error(&format!("Validate token error: {:?}", e))
+            }
+        }
+    }
+
+    pub async fn get_all_users(&self) -> ApiResponse<dtos::GetAllUsersResponse> {
+        let mut client = (*self.user_client).clone();
+        let request = GetAllUsersRequest {};
+
+        match client.get_all_users(request).await {
+            Ok(response) => ApiResponse::ok(dtos::GetAllUsersResponse {
+                users: response
+                    .into_inner()
+                    .users
+                    .into_iter()
+                    .map(|user| dtos::UserProfile {
+                        id: user.id,
+                        name: user.name,
+                    })
+                    .collect(),
+            }),
+            Err(e) => {
+                error!("Get all users error: {:?}", e);
+                ApiResponse::internal_error(&format!("Get all users error: {:?}", e))
             }
         }
     }

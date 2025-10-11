@@ -5,6 +5,7 @@ use crate::services::auth::AuthService;
 use crate::services::oauth::OAuthService;
 use crate::services::user::UserService;
 use std::net::SocketAddr;
+use std::sync::Arc;
 use tokio::task;
 use tonic::transport::Server;
 
@@ -25,13 +26,13 @@ async fn main() -> anyhow::Result<()> {
     let pool = connect(&config.database).await;
 
     let user_repo = UserRepo::new(pool);
-    let user_service = UserService::new(user_repo);
+    let user_service = Arc::new(UserService::new(user_repo));
 
     let oauth_service = OAuthService::new(config.oauth)?;
-    let auth_service = AuthService::new(user_service, oauth_service)?;
+    let auth_service = AuthService::new(user_service.clone(), oauth_service)?;
 
     let grpc_addr: SocketAddr = config.server.grpc_addr.parse()?;
-    let grpc = Server::builder().add_service(auth_server(auth_service));
+    let grpc = Server::builder().add_service(auth_server(auth_service, user_service.clone()));
 
     println!("Server running on http://{}", grpc_addr);
 

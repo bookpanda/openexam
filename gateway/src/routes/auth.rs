@@ -10,4 +10,5 @@ pub fn auth_routes() -> Router<UserHandler> {
         .route("/user/google", get(handlers::user::get_google_login_url))
         .route("/user/google/callback", post(handlers::user::login))
         .route("/user/validate-token", post(handlers::user::validate_token))
+        .route("/user", get(handlers::user::get_all_users))
 }

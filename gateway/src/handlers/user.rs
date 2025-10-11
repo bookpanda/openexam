@@ -73,3 +73,20 @@ pub async fn validate_token(
         .await
         .into_axum_response()
 }
+
+#[utoipa::path(
+    get,
+    path = "/api/user/all",
+    tag = "User",
+    responses(
+        (status = 200, description = "Success", body = dtos::GetAllUsersResponse),
+        (status = 500, description = "Internal server error"),
+    ),
+)]
+pub async fn get_all_users(State(handler): State<UserHandler>) -> impl IntoResponse {
+    handler
+        .user_service
+        .get_all_users()
+        .await
+        .into_axum_response()
+}

@@ -25,3 +25,14 @@ pub struct ValidateTokenResponse {
     pub email: String,
     pub name: String,
 }
+
+#[derive(Deserialize, Serialize, ToSchema)]
+pub struct UserProfile {
+    pub id: String,
+    pub name: String,
+}
+
+#[derive(Deserialize, Serialize, ToSchema)]
+pub struct GetAllUsersResponse {
+    pub users: Vec<UserProfile>,
+}
