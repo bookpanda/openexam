@@ -24,6 +24,18 @@ resource "aws_s3_bucket_public_access_block" "uploads" {
   restrict_public_buckets = true
 }
 
+resource "aws_s3_bucket_cors_configuration" "uploads" {
+  bucket = aws_s3_bucket.uploads.id
+
+  cors_rule {
+    allowed_headers = ["*"]
+    allowed_methods = ["GET", "PUT", "POST", "DELETE", "HEAD"]
+    allowed_origins = ["http://localhost:3000", "http://localhost:3001", "https://*"]
+    expose_headers  = ["ETag"]
+    max_age_seconds = 3000
+  }
+}
+
 resource "aws_iam_policy" "s3_policy" {
   name        = "${var.app_name}-s3-policy"
   description = "Policy to allow access to the S3 bucket"
