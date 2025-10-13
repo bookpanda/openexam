@@ -106,6 +106,28 @@ func (r *DynamoDBRepository) GetFile(ctx context.Context, id string) (domain.Fil
 	return file, nil
 }
 
+func (r *DynamoDBRepository) GetSharesOfFile(ctx context.Context, userId, key string) ([]domain.Share, error) {
+	out, err := r.client.GetItem(ctx, &dynamodb.GetItemInput{
+		TableName: &r.sharesTable,
+		Key: map[string]types.AttributeValue{
+			"userId": &types.AttributeValueMemberS{Value: userId},
+			"key":    &types.AttributeValueMemberS{Value: key},
+		},
+	})
+	if err != nil {
+		return []domain.Share{}, err
+	}
+	if len(out.Item) == 0 {
+		return []domain.Share{}, domain.ErrNotFound
+	}
+
+	var shares []domain.Share
+	if err := attributevalue.UnmarshalMap(out.Item, &shares); err != nil {
+		return []domain.Share{}, err
+	}
+	return shares, nil
+}
+
 func (r *DynamoDBRepository) ShareFile(ctx context.Context, userId, key, fileId string) error {
 	_, err := r.client.PutItem(ctx, &dynamodb.PutItemInput{
 		TableName: &r.sharesTable,
