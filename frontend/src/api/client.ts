@@ -12,10 +12,14 @@ const middleware: Middleware = {
     }
     return request
   },
-  async onResponse({ response }) {
-    // if (response.status === 401) {
-    // }
 
+  async onResponse({ response }) {
+    if (response.status === 401 && typeof window !== "undefined") {
+      console.warn("Access token expired or invalid, redirecting to signin...")
+      localStorage.removeItem("accessToken")
+      localStorage.removeItem("user_profile")
+      window.location.href = "/signin"
+    }
     return response
   },
 }

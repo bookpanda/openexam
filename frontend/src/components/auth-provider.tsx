@@ -13,7 +13,6 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
-// เส้นทางที่ไม่ต้องล็อกอิน
 const PUBLIC_ROUTES = ["/signin"]
 
 interface AuthProviderProps {
@@ -38,9 +37,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
         return
       }
 
-      if (userProfile && (pathname === "/signin" || pathname === "/")) {
+      if (userProfile && (pathname === "/signin")) {
         setUser(userProfile)
-        router.replace("/dashboard")
+        router.replace("/")
         setIsLoading(false)
         return
       }

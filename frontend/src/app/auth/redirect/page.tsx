@@ -8,10 +8,12 @@ import { userService } from "@/lib/services/user-service"
 export default function OAuthCallback() {
   const router = useRouter()
   const searchParams = useSearchParams()
+  
+  const code = searchParams.get("code")
+  const state = searchParams.get("state")
 
   useEffect(() => {
-    const code = searchParams.get("code")
-    const state = searchParams.get("state")
+    
 
     const handleLogin = async () => {
       if (code && state) {
@@ -20,6 +22,7 @@ export default function OAuthCallback() {
             body: { code, state },
           })
           console.log("Login response:", response)
+
           const userData = response.data
           if (userData) {
             localStorage.setItem("accessToken", userData.token || "")
@@ -30,8 +33,8 @@ export default function OAuthCallback() {
               name: userData.name,
             })
           }
-          
-          router.replace("/dashboard")
+
+          router.replace("/")
         } catch (err) {
           console.error("Login failed", err)
           router.replace("/signin")
@@ -40,7 +43,7 @@ export default function OAuthCallback() {
     }
 
     handleLogin()
-  }, [searchParams, router])
-
+  }, [code, state, router])
+  
   return <div>Logging in...</div>
 }

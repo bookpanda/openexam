@@ -1,7 +1,6 @@
 "use client"
 
-import type React from "react"
-import { useState, useCallback } from "react"
+import React, { useState, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Upload, FileText, X } from "lucide-react"
 import { uploadFile, generateCheatsheet } from "@/api/cheatsheet"
@@ -15,7 +14,6 @@ export function UploadZone({ onUploadComplete }: UploadZoneProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [isUploading, setIsUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
-  const [isGenerating, setIsGenerating] = useState(false)
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault()
@@ -53,37 +51,22 @@ export function UploadZone({ onUploadComplete }: UploadZoneProps) {
     setUploadProgress(0)
 
     try {
-      // Step 1: Upload file to S3
       setUploadProgress(10)
       const key = await uploadFile(selectedFile)
-      setUploadProgress(50)
-
-      // Step 2: Extract file ID from key
-      // Key format: slides/{userId}/{fileId}_{filename}.pdf
-      const keyParts = key.split("/")
-      const fileNameWithId = keyParts[keyParts.length - 1]
-      const fileId = fileNameWithId.split("_")[0]
-
-      setUploadProgress(60)
-      setIsUploading(false)
-      setIsGenerating(true)
-
-      // Step 3: Generate cheatsheet
-      // Note: This endpoint may take a while
-      await generateCheatsheet([fileId])
+      console.log("Uploaded slide to S3 with key:", key)
       setUploadProgress(100)
 
       setTimeout(() => {
         setSelectedFile(null)
-        setIsGenerating(false)
+        setIsUploading(false)
         setUploadProgress(0)
         onUploadComplete()
       }, 500)
     } catch (error) {
       console.error("Upload error:", error)
       setIsUploading(false)
-      setIsGenerating(false)
       setUploadProgress(0)
+      alert(`Upload failed: ${error instanceof Error ? error.message : "Unknown error"}`)
     }
   }
 
@@ -91,8 +74,6 @@ export function UploadZone({ onUploadComplete }: UploadZoneProps) {
     setSelectedFile(null)
     setUploadProgress(0)
   }
-
-  const isProcessing = isUploading || isGenerating
 
   return (
     <div className="bg-card border border-border rounded-xl p-8">
@@ -113,8 +94,8 @@ export function UploadZone({ onUploadComplete }: UploadZoneProps) {
               <Upload className="h-8 w-8 text-muted-foreground" />
             </div>
             <div>
-              <p className="text-lg font-medium text-foreground">Upload PDF Document</p>
-              <p className="text-sm text-muted-foreground mt-1">Drag and drop your PDF here, or click to browse</p>
+              <p className="text-lg font-medium text-foreground">Upload Slide PDF</p>
+              <p className="text-sm text-muted-foreground mt-1">Drag and drop your slide PDF here, or click to browse</p>
             </div>
             <label htmlFor="file-upload">
               <Button variant="outline" className="cursor-pointer bg-transparent" asChild>
@@ -134,20 +115,17 @@ export function UploadZone({ onUploadComplete }: UploadZoneProps) {
               <p className="font-medium truncate text-foreground">{selectedFile.name}</p>
               <p className="text-sm text-muted-foreground">{(selectedFile.size / (1024 * 1024)).toFixed(2)} MB</p>
             </div>
-            {!isProcessing && (
+            {!isUploading && (
               <Button variant="ghost" size="icon" onClick={handleRemoveFile}>
                 <X className="h-5 w-5" />
               </Button>
             )}
           </div>
 
-          {isProcessing && (
+          {isUploading && (
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">
-                  {isUploading && "Uploading to S3..."}
-                  {isGenerating && "Generating cheatsheet..."}
-                </span>
+                <span className="text-muted-foreground">Uploading slide...</span>
                 <span className="font-medium text-foreground">{uploadProgress}%</span>
               </div>
               <div className="h-2 bg-muted rounded-full overflow-hidden">
@@ -156,16 +134,11 @@ export function UploadZone({ onUploadComplete }: UploadZoneProps) {
                   style={{ width: `${uploadProgress}%` }}
                 />
               </div>
-              {isGenerating && (
-                <p className="text-xs text-muted-foreground text-center mt-2">
-                  This may take a while. Please wait...
-                </p>
-              )}
             </div>
           )}
 
-          <Button onClick={handleUpload} disabled={isProcessing} className="w-full">
-            {isProcessing ? "Processing..." : "Generate Cheatsheet"}
+          <Button onClick={handleUpload} disabled={isUploading} className="w-full">
+            {isUploading ? "Uploading..." : "Upload Slide"}
           </Button>
         </div>
       )}
