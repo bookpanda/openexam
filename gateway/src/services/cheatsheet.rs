@@ -1,21 +1,25 @@
+use std::collections::HashMap;
+
 use log::error;
 
 use crate::{
     dtos,
-    services::{response::ApiResponse, types},
+    services::{response::ApiResponse, types, user::UserService},
 };
 
 #[derive(Debug, Clone)]
 pub struct CheatsheetService {
     cheatsheet_api_url: String,
     client: reqwest::Client,
+    user_service: UserService,
 }
 
 impl CheatsheetService {
-    pub fn new(cheatsheet_api_url: String) -> Self {
+    pub fn new(cheatsheet_api_url: String, user_service: UserService) -> Self {
         Self {
             cheatsheet_api_url,
             client: reqwest::Client::new(),
+            user_service,
         }
     }
 
@@ -176,6 +180,57 @@ impl CheatsheetService {
             .collect();
 
         ApiResponse::ok(dtos::GetAllFilesResponse { files })
+    }
+
+    pub async fn get_file(
+        &self,
+        user_id: String,
+        file_id: String,
+    ) -> ApiResponse<dtos::GetFileResponse> {
+        let url = format!("{}/files/{}", self.cheatsheet_api_url, file_id);
+
+        let request = self.client.get(&url).header("X-User-Id", user_id);
+        let response = match self.send_request(request).await {
+            Ok(r) => r,
+            Err(e) => return ApiResponse::internal_error(&e),
+        };
+
+        let data: types::ServiceResponse<types::FileData> = match self.parse_json(response).await {
+            Ok(d) => d,
+            Err((status, msg)) => return ApiResponse::error(status, &msg),
+        };
+
+        let file = dtos::File {
+            id: data.data.file.ID,
+            user_id: data.data.file.UserID,
+            created_at: data.data.file.CreatedAt,
+            name: data.data.file.Name,
+            key: data.data.file.Key,
+        };
+
+        let users = match self.user_service.get_all_users().await {
+            ApiResponse::Success(u) => u.users,
+            ApiResponse::Error { status, message } => return ApiResponse::error(status, &message),
+        };
+        let user_id_to_name = users
+            .iter()
+            .map(|u| (u.id.clone(), u.name.clone()))
+            .collect::<HashMap<String, String>>();
+
+        let shares = data
+            .data
+            .shares
+            .into_iter()
+            .map(|f| dtos::Share {
+                user_id: f.UserID.clone(),
+                name: user_id_to_name
+                    .get(&f.UserID.clone())
+                    .unwrap_or(&"".to_string())
+                    .clone(),
+            })
+            .collect();
+
+        ApiResponse::ok(dtos::GetFileResponse { file, shares })
     }
 
     pub async fn share(

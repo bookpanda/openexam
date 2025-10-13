@@ -2,7 +2,7 @@ use crate::dtos::{self, PresignGetQuery, PresignUploadQuery, RemoveFileQuery};
 use crate::extractors::UserId;
 use crate::services::cheatsheet::CheatsheetService;
 use axum::Json;
-use axum::extract::{Query, State};
+use axum::extract::{Path, Query, State};
 use axum::response::IntoResponse;
 
 #[derive(Debug, Clone)]
@@ -112,6 +112,28 @@ pub async fn get_all_files(
     handler
         .cheatsheet_service
         .get_all_files(user_id)
+        .await
+        .into_axum_response()
+}
+
+#[utoipa::path(
+    get,
+    path = "/api/cheatsheet/files/:file_id",
+    tag = "Cheatsheet",
+    description = "Get a file by its ID.",
+    responses(
+        (status = 200, description = "File", body = dtos::GetFileResponse),
+        (status = 500, description = "Internal server error"),
+    ),
+)]
+pub async fn get_file(
+    State(handler): State<CheatsheetHandler>,
+    UserId(user_id): UserId,
+    Path(file_id): Path<String>,
+) -> impl IntoResponse {
+    handler
+        .cheatsheet_service
+        .get_file(user_id, file_id)
         .await
         .into_axum_response()
 }
