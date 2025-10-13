@@ -46,9 +46,9 @@ func main() {
 
 	// Service + Handler
 	fileSvc := service.NewFileService(repo, metaRepo, sqsPublisher, generationTracker, cfg.MaxUploadMB)
-	fileHandler := handler.NewFileHandler(fileSvc)
-
 	shareSvc := service.NewShareService(metaRepo)
+
+	fileHandler := handler.NewFileHandler(fileSvc, shareSvc)
 	shareHandler := handler.NewShareHandler(shareSvc, fileSvc)
 
 	// Routes
