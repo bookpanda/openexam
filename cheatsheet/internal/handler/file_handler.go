@@ -103,7 +103,7 @@ func (h *FileHandler) GetFile(c *fiber.Ctx) error {
 		return httpx.FromDomainError(c, err)
 	}
 
-	shares, err := h.shareSvc.GetSharesOfFile(c.Context(), userId, file.Key)
+	shares, err := h.shareSvc.GetSharesOfFile(c.Context(), file.ID, file.Key)
 	if err != nil {
 		return httpx.FromDomainError(c, err)
 	}

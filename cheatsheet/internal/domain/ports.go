@@ -33,11 +33,11 @@ type MetadataRepository interface {
 	UnshareFile(ctx context.Context, userId, key string) error
 	GetAllFiles(ctx context.Context, userId string) ([]File, error)
 	GetFile(ctx context.Context, id string) (File, error)
-	GetSharesOfFile(ctx context.Context, userId, key string) ([]Share, error)
+	GetSharesOfFile(ctx context.Context, fileId, key string) ([]Share, error)
 }
 
 type ShareService interface {
 	Share(ctx context.Context, userId, key, fileId string) error
 	Unshare(ctx context.Context, userId, key string) error
-	GetSharesOfFile(ctx context.Context, userId, key string) ([]Share, error)
+	GetSharesOfFile(ctx context.Context, fileId, key string) ([]Share, error)
 }

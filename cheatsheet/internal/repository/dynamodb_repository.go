@@ -106,24 +106,30 @@ func (r *DynamoDBRepository) GetFile(ctx context.Context, id string) (domain.Fil
 	return file, nil
 }
 
-func (r *DynamoDBRepository) GetSharesOfFile(ctx context.Context, userId, key string) ([]domain.Share, error) {
-	out, err := r.client.GetItem(ctx, &dynamodb.GetItemInput{
-		TableName: &r.sharesTable,
-		Key: map[string]types.AttributeValue{
-			"userId": &types.AttributeValueMemberS{Value: userId},
-			"key":    &types.AttributeValueMemberS{Value: key},
+func (r *DynamoDBRepository) GetSharesOfFile(ctx context.Context, fileId, key string) ([]domain.Share, error) {
+	// Query GSI by fileId to get all shares for this file
+	out, err := r.client.Query(ctx, &dynamodb.QueryInput{
+		TableName:              &r.sharesTable,
+		IndexName:              aws.String("FileIdIndex"),
+		KeyConditionExpression: aws.String("fileId = :fid"),
+		ExpressionAttributeValues: map[string]types.AttributeValue{
+			":fid": &types.AttributeValueMemberS{Value: fileId},
 		},
 	})
 	if err != nil {
 		return []domain.Share{}, err
 	}
-	if len(out.Item) == 0 {
-		return []domain.Share{}, domain.ErrNotFound
+	if len(out.Items) == 0 {
+		return []domain.Share{}, nil // Return empty array if no shares found
 	}
 
 	var shares []domain.Share
-	if err := attributevalue.UnmarshalMap(out.Item, &shares); err != nil {
-		return []domain.Share{}, err
+	for _, item := range out.Items {
+		var share domain.Share
+		if err := attributevalue.UnmarshalMap(item, &share); err != nil {
+			continue // Skip invalid items
+		}
+		shares = append(shares, share)
 	}
 	return shares, nil
 }
