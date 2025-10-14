@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { getPresignedUrl } from "@/api/cheatsheet"
 import { Spinner } from "@/components/ui/spinner"
 import { AlertCircle } from "lucide-react"
@@ -14,21 +14,54 @@ export default function CheatsheetPreview({ fileKey }: CheatsheetPreviewProps) {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
+  const isLoadingRef = useRef(false)
+  const currentKeyRef = useRef<string | null>(null)
+
   useEffect(() => {
+    if (currentKeyRef.current !== fileKey) {
+      setUrl(null)
+      setError(null)
+      setIsLoading(true)
+      currentKeyRef.current = fileKey
+    }
+
     const loadUrl = async () => {
+      if (isLoadingRef.current) {
+        console.log("Already loading URL, skipping...")
+        return
+      }
+
+      isLoadingRef.current = true
       setIsLoading(true)
       setError(null)
+
       try {
-        const { url } = await getPresignedUrl(fileKey)
-        setUrl(url)
-      } catch (error) {
-        console.error("Failed to load PDF preview:", error)
-        setError("Failed to load preview. Please try again.")
+        console.log("Loading presigned URL for:", fileKey)
+        const data = await getPresignedUrl(fileKey)
+        
+        if (currentKeyRef.current === fileKey) {
+          setUrl(data.url)
+          setError(null)
+          console.log("URL loaded successfully")
+        }
+      } catch (err) {
+        console.error("Error loading URL:", err)
+        if (currentKeyRef.current === fileKey) {
+          setError(err instanceof Error ? err.message : "Failed to load preview")
+          setUrl(null)
+        }
       } finally {
         setIsLoading(false)
+        isLoadingRef.current = false
       }
     }
+
     loadUrl()
+
+    // Cleanup function
+    return () => {
+      isLoadingRef.current = false
+    }
   }, [fileKey])
 
   if (isLoading) {

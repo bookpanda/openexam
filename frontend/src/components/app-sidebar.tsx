@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet"
 import {
@@ -40,6 +40,7 @@ function SidebarContent({ user, onNavigate, onUploadClick }: AppSidebarProps & {
   const [isLoggingOut, setIsLoggingOut] = useState(false)
   const [files, setFiles] = useState<File[]>([])
   const [isLoadingFiles, setIsLoadingFiles] = useState(true)
+  const deletedKeysRef = useRef<Map<string, number>>(new Map())
   const [showCheatsheets, setShowCheatsheets] = useState(true)
   const [showSlides, setShowSlides] = useState(true)
   const [copied, setCopied] = useState(false)
@@ -49,7 +50,43 @@ function SidebarContent({ user, onNavigate, onUploadClick }: AppSidebarProps & {
   useEffect(() => {
     loadFiles()
 
-    const handleFileChange = () => {
+    type FilesChangedDetail = { action?: string; files?: Array<{ key?: string; name?: string } | string> }
+
+    type UploadedFile = { name: string; key: string }
+
+
+    const handleFileChange = (e: Event) => {
+      const custom = e as CustomEvent | Event
+      const detail = ((custom as CustomEvent).detail ?? {}) as FilesChangedDetail
+      if (detail) {
+        if (detail.action === "uploaded" && Array.isArray(detail.files)) {
+          // Insert placeholders optimistically
+          setFiles((prev) => {
+            const placeholders = (detail.files as Array<string | UploadedFile>).map((f) => ({
+              id: `upload-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+              name: typeof f === "string" ? f : f.name,
+              key: typeof f === "string" ? f : f.key,
+              userId: user?.id || "",
+              createdAt: new Date().toISOString(),
+            })) as File[]
+            return [...placeholders, ...prev]
+          })
+          // background refresh
+          loadFiles()
+          return
+        }
+
+        if (detail.action === "deleted" && Array.isArray(detail.files)) {
+          const filesArr = detail.files as Array<string>
+          setFiles((prev) => prev.filter((f) => !filesArr.includes(f.key) && !filesArr.includes(f.id)))
+          // mark deleted in local map so server fetch won't re-add for a bit
+          filesArr.forEach((k) => deletedKeysRef.current.set(k, Date.now()))
+          loadFiles()
+          return
+        }
+      }
+
+      // default: reload full list
       loadFiles()
     }
 
@@ -60,13 +97,22 @@ function SidebarContent({ user, onNavigate, onUploadClick }: AppSidebarProps & {
       window.removeEventListener("filesChanged", handleFileChange)
       clearInterval(interval)
     }
-  }, [])
+  }, [user?.id])
 
   const loadFiles = async () => {
     try {
       const fetched = await getAllFiles()
-      fetched.sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt))
-      setFiles(fetched)
+      // cleanup stale deleted keys older than 30s
+      const now = Date.now()
+      for (const [k, ts] of deletedKeysRef.current.entries()) {
+        if (now - ts > 30_000) deletedKeysRef.current.delete(k)
+      }
+      const filtered = fetched.filter((f) => {
+        const ts = deletedKeysRef.current.get(f.key)
+        return !(ts && now - ts < 10_000)
+      })
+      filtered.sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt))
+      setFiles(filtered)
     } catch (error) {
       console.error("Error loading files:", error)
     } finally {
@@ -372,7 +418,7 @@ function SidebarContent({ user, onNavigate, onUploadClick }: AppSidebarProps & {
               <div className="flex-1">
                 <h4 className="font-medium mb-1">Upload Slides</h4>
                 <p className="text-sm text-muted-foreground">
-                  Click the "Upload Slides" button and select your slide files
+                  Click the &quot;Upload Slides&quot; button and select your slide files
                 </p>
               </div>
             </div>
@@ -392,7 +438,7 @@ function SidebarContent({ user, onNavigate, onUploadClick }: AppSidebarProps & {
               <div className="flex-1">
                 <h4 className="font-medium mb-1">Click Generate and Wait</h4>
                 <p className="text-sm text-muted-foreground">
-                  Press the "Generate" button and wait for the process to complete
+                  Press the &quot;Generate&quot; button and wait for the process to complete
                 </p>
               </div>
             </div>

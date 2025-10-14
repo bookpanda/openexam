@@ -1,9 +1,12 @@
 "use client"
+
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Eye, Trash2, Presentation, FileCheck } from "lucide-react"
+import { Eye, Trash2, Presentation, FileCheck, Download } from "lucide-react"
 import type { File } from "@/api/cheatsheet"
 import { useAuth } from "@/components/auth-provider"
+import { downloadFile } from "@/api/cheatsheet"
+import { useToast } from "@/hooks/use-toast"
 
 interface CheatsheetCardProps {
   file: File
@@ -14,8 +17,28 @@ interface CheatsheetCardProps {
 
 export function CheatsheetCard({ file, onView, onDelete, fileType }: CheatsheetCardProps) {
   const { user } = useAuth()
+  const { toast } = useToast()
   const isSlide = fileType === "slide" || file.key.startsWith("slides/")
   const isOwner = file.userId === user?.id
+
+  const handleDownload = async (e: React.MouseEvent) => {
+    e.stopPropagation()
+    
+    try {
+      await downloadFile(file.key)
+      toast({
+        title: "Success",
+        description: "Download started",
+      })
+    } catch (error) {
+      console.error("Error downloading file:", error)
+      toast({
+        title: "Error",
+        description: "Failed to download file. Please try again.",
+        variant: "destructive",
+      })
+    }
+  }
 
   return (
     <div
@@ -24,16 +47,16 @@ export function CheatsheetCard({ file, onView, onDelete, fileType }: CheatsheetC
                  w-full max-w-full"
     >
       <div
-        className={`relative h-28 sm:h-36 md:h-44 flex items-center justify-center 
-                    ${
+        className={`relative h-28 sm:h-36 md:h-44 flex items-center justify-center
+                     ${
                       isSlide
                         ? "bg-gradient-to-br from-blue-500/20 via-blue-400/10 to-transparent"
                         : "bg-gradient-to-br from-green-500/20 via-green-400/10 to-transparent"
                     }`}
       >
         <div
-          className={`p-3 sm:p-4 rounded-xl 
-            ${isSlide ? "bg-blue-500/10 text-blue-600" : "bg-green-500/10 text-green-600"}`}
+          className={`p-3 sm:p-4 rounded-xl
+             ${isSlide ? "bg-blue-500/10 text-blue-600" : "bg-green-500/10 text-green-600"}`}
         >
           {isSlide ? (
             <Presentation className="h-8 w-8 sm:h-10 sm:w-10 md:h-12 md:w-12" />
@@ -84,12 +107,24 @@ export function CheatsheetCard({ file, onView, onDelete, fileType }: CheatsheetC
             <span className="hidden xs:inline sm:inline">View</span>
             <span className="xs:hidden sm:hidden">View</span>
           </Button>
+          
+          <Button
+            onClick={handleDownload}
+            size="sm"
+            variant="outline"
+            className="w-9 sm:w-10 h-8 sm:h-9 p-0 bg-primary/10 border-primary/20 text-primary hover:bg-primary/20"
+            title="Download"
+          >
+            <Download className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+          </Button>
+          
           {isOwner && (
             <Button
               onClick={() => onDelete(file.id, file.key)}
               size="sm"
               variant="outline"
               className="w-9 sm:w-10 h-8 sm:h-9 p-0 bg-destructive/10 border-destructive/20 text-destructive hover:bg-destructive/20"
+              title="Delete"
             >
               <Trash2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             </Button>

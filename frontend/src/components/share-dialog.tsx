@@ -34,13 +34,12 @@ interface ShareDialogProps {
   fileId: string
   fileName: string
   sharedUsers: SharedUser[]
-  currentUserId: string // เพิ่ม prop สำหรับเช็คว่าเป็นตัวเองหรือไม่
+  currentUserId: string
   onShare: (userId: string) => Promise<void>
   onUnshare: (userId: string) => Promise<void>
 }
 
 export function ShareDialog({
-  fileId,
   fileName,
   sharedUsers,
   currentUserId,
@@ -50,6 +49,7 @@ export function ShareDialog({
   const [open, setOpen] = useState(false)
   const [userIdInput, setUserIdInput] = useState("")
   const [isSharing, setIsSharing] = useState(false)
+  const [isUnsharing, setIsUnsharing] = useState(false)
   const [error, setError] = useState("")
   const [localSharedUsers, setLocalSharedUsers] = useState<SharedUser[]>(sharedUsers)
   const [unshareConfirm, setUnshareConfirm] = useState<string | null>(null)
@@ -58,20 +58,39 @@ export function ShareDialog({
     setLocalSharedUsers(sharedUsers)
   }, [sharedUsers])
 
+  useEffect(() => {
+    // ตรวจสอบว่ามี user ที่ไม่มีชื่อหรือไม่ (แสดงว่า user ไม่มีจริง)
+    const invalidUsers = localSharedUsers.filter(u => !u.name && u.userId !== currentUserId)
+    if (invalidUsers.length > 0) {
+      // ลบ user ที่ไม่มีชื่อออกจาก local state
+      setLocalSharedUsers(prev => prev.filter(u => u.name || u.userId === currentUserId))
+      
+      // แสดง error
+      invalidUsers.forEach(invalidUser => {
+        setError(`User ID ${invalidUser.userId} does not exist`)
+      })
+    }
+  }, [localSharedUsers, currentUserId])
+
   const handleShare = async () => {
     const targetUserId = userIdInput.trim()
+    
+    // Validation: ต้องเป็นตัวเลขเท่านั้น
     if (!targetUserId) {
       setError("Please enter a User ID")
       return
     }
+    
+    if (!/^\d+$/.test(targetUserId)) {
+      setError("User ID must contain only numbers")
+      return
+    }
+    
     if (targetUserId === currentUserId) {
       setError("You cannot share a file with yourself")
       return
     }
-    if (targetUserId.includes("@")) {
-      setError("Please use User ID only, not email address")
-      return
-    }
+    
     if (localSharedUsers.some(u => u.userId === targetUserId)) {
       setError("This file is already shared with this user")
       return
@@ -83,39 +102,61 @@ export function ShareDialog({
     try {
       await onShare(targetUserId)
       setUserIdInput("")
-      setLocalSharedUsers(prev => [
-        ...prev,
-        { userId: targetUserId, sharedAt: new Date().toISOString() }
-      ])
+      // รอ parent component update ผ่าน props
+      // ถ้า user ไม่มีชื่อ useEffect ด้านบนจะจัดการให้
     } catch (error) {
       console.error("Error sharing file:", error)
-      setError(error instanceof Error ? error.message : "Failed to share file")
+      const errorMessage = error instanceof Error ? error.message : "Failed to share file"
+      
+      // ตรวจสอบว่าเป็น error ที่บอกว่า user ไม่มีจริง
+      if (errorMessage.includes("not found") || errorMessage.includes("does not exist") || errorMessage.includes("User not found")) {
+        setError(`User ID ${targetUserId} does not exist`)
+      } else {
+        setError(errorMessage)
+      }
     } finally {
       setIsSharing(false)
     }
   }
 
-
   const handleUnshareClick = (targetUserId: string) => {
     setUnshareConfirm(targetUserId)
   }
 
-
   const handleUnshareConfirm = async () => {
     if (!unshareConfirm) return
+    
     const targetId = unshareConfirm
-    setUnshareConfirm(null)
-
+    setIsUnsharing(true)
+    
     try {
+      // ปิด dialog ก่อน
+      setUnshareConfirm(null)
+      
       await onUnshare(targetId)
+      
+      // ลบออกจาก local state
       setLocalSharedUsers(prev => prev.filter(u => u.userId !== targetId))
     } catch (err) {
       console.error("Error unsharing file:", err)
       setError(err instanceof Error ? err.message : "Failed to unshare file")
+    } finally {
+      setIsUnsharing(false)
     }
   }
 
+  const handleUnshareCancel = () => {
+    setUnshareConfirm(null)
+  }
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    // อนุญาตเฉพาะตัวเลข
+    if (value === "" || /^\d+$/.test(value)) {
+      setUserIdInput(value)
+      setError("")
+    }
+  }
 
   const otherSharedUsers = localSharedUsers.filter(u => u.userId !== currentUserId)
 
@@ -124,9 +165,9 @@ export function ShareDialog({
       <Button variant="outline" onClick={() => setOpen(true)}>
         <Share2 className="h-4 w-4 mr-2" />
         Manage Sharing
-        {localSharedUsers.length > 0 && (
+        {otherSharedUsers.length > 0 && (
           <Badge variant="secondary" className="ml-2">
-            {localSharedUsers.filter(u => u.userId !== currentUserId).length}
+            {otherSharedUsers.length}
           </Badge>
         )}
       </Button>
@@ -134,28 +175,27 @@ export function ShareDialog({
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Share "{fileName}"</DialogTitle>
+            <DialogTitle>Share &quot;{fileName}&quot;</DialogTitle>
             <DialogDescription>
-              Enter the User ID of the person you want to share this file with
+              Enter the User ID (numbers only) of the person you want to share this file with
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-4">
             <div className="flex gap-2">
               <Input
-                placeholder="Enter User ID"
+                placeholder="Enter User ID (numbers only)"
                 value={userIdInput}
-                onChange={(e) => {
-                  setUserIdInput(e.target.value)
-                  setError("")
-                }}
+                onChange={handleInputChange}
                 onKeyDown={(e) => {
-                  if (e.key === "Enter") {
+                  if (e.key === "Enter" && !isSharing) {
                     handleShare()
                   }
                 }}
                 disabled={isSharing}
                 className="flex-1"
+                type="text"
+                inputMode="numeric"
               />
               <Button
                 onClick={handleShare}
@@ -188,7 +228,7 @@ export function ShareDialog({
                     >
                       <div className="flex-1 min-w-0 mr-2">
                         <p className="text-sm font-medium truncate">
-                          {user.name || user.userId}
+                          {user.name || `User ${user.userId}`}
                         </p>
                         {user.sharedAt && (
                           <p className="text-xs text-muted-foreground">
@@ -204,6 +244,7 @@ export function ShareDialog({
                         variant="ghost"
                         size="sm"
                         onClick={() => handleUnshareClick(user.userId)}
+                        disabled={isUnsharing}
                         className="text-destructive hover:text-destructive hover:bg-destructive/10 flex-shrink-0"
                       >
                         <Trash2 className="h-4 w-4" />
@@ -214,12 +255,10 @@ export function ShareDialog({
               </div>
             )}
 
-
-
-            {localSharedUsers.length === 0 && (
+            {otherSharedUsers.length === 0 && (
               <div className="text-center py-8 text-sm text-muted-foreground border rounded-lg bg-muted/20">
                 <Share2 className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                <p>This file hasn't been shared with anyone yet</p>
+                <p>This file hasn&apos;t been shared with anyone yet</p>
               </div>
             )}
           </div>
@@ -232,20 +271,26 @@ export function ShareDialog({
         </DialogContent>
       </Dialog>
 
-      <AlertDialog open={!!unshareConfirm} onOpenChange={() => setUnshareConfirm(null)}>
+      <AlertDialog open={!!unshareConfirm && !isUnsharing} onOpenChange={(open) => {
+        if (!open && !isUnsharing) {
+          handleUnshareCancel()
+        }
+      }}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Revoke access?</AlertDialogTitle>
             <AlertDialogDescription>
               Are you sure you want to revoke access from{" "}
               <strong>
-                {localSharedUsers.find(u => u.userId === unshareConfirm)?.name || unshareConfirm}
+                {localSharedUsers.find(u => u.userId === unshareConfirm)?.name || `User ${unshareConfirm}`}
               </strong>
               ? They will no longer be able to view this file.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel onClick={handleUnshareCancel}>
+              Cancel
+            </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleUnshareConfirm}
               className="bg-destructive hover:bg-destructive/90"

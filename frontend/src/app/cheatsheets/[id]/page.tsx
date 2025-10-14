@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { ArrowLeft, Download, Trash2, Link2, Presentation, FileCheck } from "lucide-react"
@@ -25,7 +25,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 
-// Extended Share type with sharedAt
 interface SharedUserWithDate extends Share {
   sharedAt?: string
 }
@@ -42,24 +41,18 @@ export default function CheatsheetViewPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [sharedUsers, setSharedUsers] = useState<SharedUserWithDate[]>([])
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  
+  const isLoadingRef = useRef(false)
 
-  useEffect(() => {
-    loadFile()
-
-    const handleFileChange = () => {
-      console.log("File change detected, reloading file details...")
-      loadFile()
+  const loadFile = useCallback(async () => {
+    if (isLoadingRef.current) {
+      console.log("Already loading, skipping...")
+      return
     }
 
-    window.addEventListener("filesChanged", handleFileChange)
-
-    return () => {
-      window.removeEventListener("filesChanged", handleFileChange)
-    }
-  }, [fileId])
-
-  const loadFile = async () => {
+    isLoadingRef.current = true
     setIsLoading(true)
+    
     try {
       const data = await getFileById(fileId)
 
@@ -80,8 +73,44 @@ export default function CheatsheetViewPage() {
       })
     } finally {
       setIsLoading(false)
+      isLoadingRef.current = false
     }
-  }
+  }, [fileId, toast])
+
+  useEffect(() => {
+    loadFile()
+  }, [loadFile])
+
+  useEffect(() => {
+    type FilesChangedDetail = { 
+      action?: string
+      files?: Array<{ key?: string; name?: string } | string>
+    }
+
+    const handleFileChange = (e: Event) => {
+      const custom = e as CustomEvent | Event
+      const detail = ((custom as CustomEvent).detail ?? {}) as FilesChangedDetail
+      
+      if (detail.action === "deleted" && Array.isArray(detail.files)) {
+        const deletedKeys = detail.files as string[]
+        if (file && deletedKeys.includes(file.key)) {
+          router.push("/")
+          return
+        }
+      }
+
+      if (detail.action === "shared" || detail.action === "unshared") {
+        console.log(`File ${detail.action}, reloading...`)
+        loadFile()
+      }
+    }
+
+    window.addEventListener("filesChanged", handleFileChange)
+
+    return () => {
+      window.removeEventListener("filesChanged", handleFileChange)
+    }
+  }, [file, router, loadFile])
 
   const handleShare = async (targetUserId: string) => {
     if (!file) return
@@ -90,10 +119,13 @@ export default function CheatsheetViewPage() {
       await shareFile(fileId, targetUserId)
       await loadFile()
 
-      // Notify other components
-      window.dispatchEvent(new Event("filesChanged"))
+      window.dispatchEvent(
+        new CustomEvent("filesChanged", { 
+          detail: { action: "shared", files: [file.key] } 
+        })
+      )
 
-      toast({ title: "Success", description: `File shared successfully` })
+      toast({ title: "Success", description: "File shared successfully" })
     } catch (error) {
       console.error("Error sharing file:", error)
       toast({
@@ -112,10 +144,13 @@ export default function CheatsheetViewPage() {
       await unshareFile(fileId, targetUserId)
       await loadFile()
 
-      // Notify other components
-      window.dispatchEvent(new Event("filesChanged"))
+      window.dispatchEvent(
+        new CustomEvent("filesChanged", { 
+          detail: { action: "unshared", files: [fileId] } 
+        })
+      )
 
-      toast({ title: "Success", description: `Access revoked successfully` })
+      toast({ title: "Success", description: "Access revoked successfully" })
     } catch (error) {
       console.error("Error unsharing file:", error)
       toast({
@@ -134,7 +169,7 @@ export default function CheatsheetViewPage() {
   const handleDeleteConfirm = async () => {
     if (!file) return
 
-    setShowDeleteDialog(false) // Close dialog immediately
+    setShowDeleteDialog(false)
 
     try {
       const fileType = file.key.startsWith("slides/") ? "slides" : "cheatsheets"
@@ -146,10 +181,12 @@ export default function CheatsheetViewPage() {
         description: "File deleted successfully",
       })
 
-      // Notify sidebar immediately
-      window.dispatchEvent(new Event("filesChanged"))
+      window.dispatchEvent(
+        new CustomEvent("filesChanged", { 
+          detail: { action: "deleted", files: [file.key] } 
+        })
+      )
 
-      // Navigate immediately
       router.push("/")
     } catch (error) {
       console.error("Error deleting file:", error)
@@ -203,7 +240,7 @@ export default function CheatsheetViewPage() {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <h2 className="text-2xl font-bold mb-2">File not found</h2>
-          <p className="text-muted-foreground mb-6">The file you're looking for doesn't exist.</p>
+          <p className="text-muted-foreground mb-6">The file you&apos;re looking for doesn&apos;t exist.</p>
           <Button onClick={() => router.push("/")} className="bg-primary hover:bg-primary/90">
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to My Files

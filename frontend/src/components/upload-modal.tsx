@@ -13,7 +13,8 @@ import { Progress } from "@/components/ui/progress"
 interface UploadModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  onUploadComplete: () => void
+  // called after upload completes; may receive an array of uploaded files { key, name }
+  onUploadComplete: (uploaded?: { key: string; name: string }[]) => void
 }
 
 interface FileWithProgress {
@@ -109,9 +110,16 @@ export function UploadModal({ open, onOpenChange, onUploadComplete }: UploadModa
       setFiles((prev) => prev.map((f, i) => (i === index ? { ...f, status: "uploading" as const, progress: 10 } : f)))
 
       // Upload file directly to S3
-      await uploadFile(fileWithProgress.file)
+      const key = await uploadFile(fileWithProgress.file)
 
+      // mark success locally
       setFiles((prev) => prev.map((f, i) => (i === index ? { ...f, status: "success" as const, progress: 100 } : f)))
+
+      // Emit a per-file uploaded event so listeners can add the file immediately
+      const uploaded = { key, name: fileWithProgress.file.name }
+      window.dispatchEvent(new CustomEvent("filesChanged", { detail: { action: "uploaded", files: [uploaded] } }))
+
+      return key
     } catch (error) {
       setFiles((prev) =>
         prev.map((f, i) =>
@@ -133,32 +141,44 @@ export function UploadModal({ open, onOpenChange, onUploadComplete }: UploadModa
     setIsUploading(true)
 
     try {
-      // Upload all files in parallel
-      await Promise.all(files.map((file, index) => uploadSingleFile(file, index)))
+      // Upload all files in parallel and collect keys
+      const uploadPromises = files.map((file, index) => uploadSingleFile(file, index))
+      const keys = await Promise.all(uploadPromises)
+
+      const uploadedFiles: { key: string; name: string }[] = []
+      keys.forEach((k, i) => {
+        if (k) {
+          uploadedFiles.push({ key: k as string, name: files[i].file.name })
+        }
+      })
 
       const successCount = files.filter((f) => f.status === "success").length
       const errorCount = files.filter((f) => f.status === "error").length
 
-      if (errorCount === 0) {
+      if (successCount > 0) {
         toast({
           title: "Success",
           description: `Successfully uploaded ${successCount} file(s)`,
         })
 
-        window.dispatchEvent(new Event("filesChanged"))
-        onUploadComplete()
+        // Emit a CustomEvent with uploaded file info so listeners can optimistically update
+        window.dispatchEvent(new CustomEvent("filesChanged", { detail: { action: "uploaded", files: uploadedFiles } }))
+        onUploadComplete(uploadedFiles)
+      }
 
-        setTimeout(() => {
-          onOpenChange(false)
-          setFiles([])
-        }, 300)
-      } else {
+      if (errorCount > 0) {
         toast({
           title: "Partial success",
           description: `Uploaded ${successCount} file(s), ${errorCount} failed`,
           variant: "destructive",
         })
       }
+
+      // Close modal shortly after
+      setTimeout(() => {
+        onOpenChange(false)
+        setFiles([])
+      }, 300)
     } catch (error) {
       toast({
         title: "Error",

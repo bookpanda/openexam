@@ -40,15 +40,32 @@ export const getAllFiles = async (): Promise<File[]> => {
  * GET /api/cheatsheet/files/:file_id
  */
 export const getFileById = async (fileId: string): Promise<GetFileResponse> => {
-  // Build the full path with the file_id
-  const path = `/api/cheatsheet/files/${fileId}` as any
-  
-  const response = await client.GET(path, {})
+  // Call GET with a dynamically constructed path. The generated client type
+  // expects literal path overloads; cast client to any to allow the dynamic path.
+  const clientDynamic = client as unknown as {
+    GET: (
+      path: string,
+      options?: Record<string, unknown>
+    ) => Promise<{
+      data?: GetFileResponse
+      error?: unknown
+    }>
+  }
+  const response = await clientDynamic.GET(
+    `/api/cheatsheet/files/${fileId}`,
+    {}
+  )
 
   if (response.error) {
-    throw new Error(response.error.message || "Failed to fetch file details")
+    const errObj = response.error as Record<string, unknown>
+    const msg =
+      typeof errObj?.message === "string"
+        ? (errObj.message as string)
+        : undefined
+    throw new Error(msg || "Failed to fetch file details")
   }
 
+  // response.data should match GetFileResponse per schema
   return response.data as GetFileResponse
 }
 
@@ -69,7 +86,9 @@ export const removeFile = async (fileType: FileType, filename: string): Promise<
 
   if (response.error) {
     console.error("Delete API error:", response.error)
-    throw new Error(response.error.message || "Failed to delete file")
+    const errObj = response.error as Record<string, unknown>
+    const msg = typeof errObj?.message === 'string' ? (errObj.message as string) : undefined
+    throw new Error(msg || "Failed to delete file")
   }
 }
 
@@ -156,7 +175,9 @@ export const getPresignedUrl = async (key: string): Promise<GetPresignedGetUrlRe
 
   if (response.error) {
     console.error("Presigned URL error:", response.error)
-    throw new Error(response.error.message || "Failed to get presigned URL")
+    const errObj = response.error as Record<string, unknown>
+    const msg = typeof errObj?.message === 'string' ? (errObj.message as string) : undefined
+    throw new Error(msg || "Failed to get presigned URL")
   }
 
   if (!response.data?.url) {
@@ -225,7 +246,9 @@ export const shareFile = async (fileId: string, userId: string): Promise<ShareRe
   })
 
   if (response.error) {
-    throw new Error(response.error.message || "Failed to share file")
+    const errObj = response.error as Record<string, unknown>
+    const msg = typeof errObj?.message === 'string' ? (errObj.message as string) : undefined
+    throw new Error(msg || "Failed to share file")
   }
 
   return response.data as ShareResponse
@@ -244,7 +267,9 @@ export const unshareFile = async (fileId: string, userId: string): Promise<Unsha
   })
 
   if (response.error) {
-    throw new Error(response.error.message || "Failed to unshare file")
+    const errObj = response.error as Record<string, unknown>
+    const msg = typeof errObj?.message === 'string' ? (errObj.message as string) : undefined
+    throw new Error(msg || "Failed to unshare file")
   }
 
   return response.data as UnshareResponse

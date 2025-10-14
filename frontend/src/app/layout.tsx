@@ -5,8 +5,6 @@ import { Suspense } from "react";
 import { ThemeProvider } from "@/components/theme-provider";
 import { SidebarProvider } from "@/components/sidebar-provider";
 import { AuthProvider } from "@/components/auth-provider";
-import { AppSidebar } from "@/components/app-sidebar"
-import { useAuth } from "@/components/auth-provider"
 
 const geistSans = Geist({
   variable: "--font-geist-sans",

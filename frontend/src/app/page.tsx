@@ -1,13 +1,13 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef, useMemo } from "react"
 import { Button } from "@/components/ui/button"
-import { Plus, FileCheck, Presentation, Loader2, Search, X } from "lucide-react"
+import { Plus, FileCheck, Presentation, Loader2, Search, X, RefreshCw } from "lucide-react"
 import { Checkbox } from "@/components/ui/checkbox"
 import { AppSidebar } from "@/components/app-sidebar"
 import { SidebarToggle } from "@/components/sidebar-toggle"
 import { CheatsheetCard } from "@/components/cheatsheet-card"
-import { getAllFiles, generateCheatsheet, shareFile, unshareFile, removeFile, type File } from "@/api/cheatsheet"
+import { getAllFiles, generateCheatsheet, removeFile, type File } from "@/api/cheatsheet"
 import { useAuth } from "@/components/auth-provider"
 import { useRouter } from "next/navigation"
 import { useSidebar } from "@/components/sidebar-provider"
@@ -28,10 +28,10 @@ import { UploadModal } from "@/components/upload-modal"
 import { Input } from "@/components/ui/input"
 
 // Debounce utility
-function debounce<T extends (...args: any[]) => any>(func: T, wait: number): T & { cancel: () => void } {
+function debounce<T extends (...args: unknown[]) => unknown>(func: T, wait: number): T & { cancel: () => void } {
   let timeout: NodeJS.Timeout | null = null
 
-  const debounced = function (this: any, ...args: Parameters<T>) {
+  const debounced = function (this: unknown, ...args: Parameters<T>) {
     if (timeout) clearTimeout(timeout)
     timeout = setTimeout(() => func.apply(this, args), wait)
   } as T & { cancel: () => void }
@@ -87,16 +87,18 @@ export default function DashboardPage() {
   const { toast } = useToast()
 
   const [files, setFiles] = useState<File[]>([])
+  // Track recently deleted keys to prevent re-adding them from server responses
+  const deletedKeysRef = useRef<Map<string, number>>(new Map())
   const [isLoading, setIsLoading] = useState(true)
   const [selectedSlides, setSelectedSlides] = useState<Set<string>>(new Set())
   const [isGenerating, setIsGenerating] = useState(false)
-  const [generateProgress, setGenerateProgress] = useState(0)
   const [activeTab, setActiveTab] = useState<"all" | "slides" | "cheatsheets">("all")
   const [showGenerateModal, setShowGenerateModal] = useState(false)
   const [deleteFile, setDeleteFile] = useState<{ id: string; key: string; name: string } | null>(null)
   const [showUploadModal, setShowUploadModal] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
   const [showSearch, setShowSearch] = useState(false)
+  const [isRefreshing, setIsRefreshing] = useState(false)
 
   const loadFiles = useCallback(async () => {
     console.log("Dashboard: loadFiles called")
@@ -104,7 +106,29 @@ export default function DashboardPage() {
     try {
       const data = await getAllFiles()
       data.sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt))
-      setFiles(data)
+      // Preserve optimistic uploads and filter out files recently deleted locally
+      setFiles((prev) => {
+        try {
+          // remove stale deleted keys older than 30s
+          const now = Date.now()
+          for (const [k, ts] of deletedKeysRef.current.entries()) {
+            if (now - ts > 30_000) deletedKeysRef.current.delete(k)
+          }
+          const placeholders = prev.filter((f) => typeof f.id === "string" && f.id.startsWith("upload-"))
+          const serverFiltered = data.filter((d) => {
+            const deletedAt = deletedKeysRef.current.get(d.key)
+            // If key was deleted within last 10s, exclude it from server results
+            if (deletedAt && Date.now() - deletedAt < 10_000) return false
+            return true
+          })
+          const serverKeys = new Set(serverFiltered.map((d) => d.key))
+          const remainingPlaceholders = placeholders.filter((p) => !serverKeys.has(p.key))
+          return [...remainingPlaceholders, ...serverFiltered]
+        } catch (err) {
+          console.error("Error while updating files:", err)
+          return data
+        }
+      })
       console.log("Dashboard: Files loaded successfully, count:", data.length)
     } catch (error) {
       console.error("Error loading files:", error)
@@ -118,15 +142,46 @@ export default function DashboardPage() {
     }
   }, [toast])
 
-  const debouncedLoadFiles = useCallback(
-    debounce(() => loadFiles(), 100),
-    [loadFiles],
-  )
+  const debouncedLoadFiles = useMemo(() => debounce(loadFiles, 100), [loadFiles])
 
   useEffect(() => {
     loadFiles()
 
-    const handleFileChange = () => {
+    type FilesChangedDetail = { action?: string; files?: Array<{ key?: string; name?: string } | string> }
+    type UploadedFile = { name: string; key: string }
+
+    const handleFileChange = (e: Event) => {
+      // If it's a CustomEvent with detail, try to update optimistically
+      const custom = e as CustomEvent | Event
+      const detail = ((custom as CustomEvent).detail ?? {}) as FilesChangedDetail
+      if (detail) {
+        if (detail.action === "uploaded" && Array.isArray(detail.files)) {
+          console.log("Dashboard: Optimistically adding uploaded files", detail.files)
+          // Create placeholder entries for uploaded files so UI updates immediately.
+          setFiles((prev) => {
+            const placeholders = (detail.files as Array<string | UploadedFile>).map((f) => ({
+              id: `upload-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+              name: typeof f === "string" ? f : f.name,
+              key: typeof f === "string" ? f : f.key,
+              userId: user?.id || "",
+              createdAt: new Date().toISOString(),
+            })) as File[]
+            return [...placeholders, ...prev]
+          })
+          // Also trigger a background refresh to reconcile real data
+          debouncedLoadFiles()
+          return
+        }
+        if (detail.action === "deleted" && Array.isArray(detail.files)) {
+          const filesArr = detail.files as Array<string>
+          console.log("Dashboard: Optimistically removing deleted files", filesArr)
+          setFiles((prev) => prev.filter((f) => !filesArr.includes(f.key) && !filesArr.includes(f.id)))
+          debouncedLoadFiles()
+          return
+        }
+      }
+
+      // fallback: call debounced load
       console.log("  Dashboard: Received filesChanged event, calling debouncedLoadFiles")
       debouncedLoadFiles()
     }
@@ -137,31 +192,31 @@ export default function DashboardPage() {
       window.removeEventListener("filesChanged", handleFileChange)
       debouncedLoadFiles.cancel()
     }
-  }, [loadFiles, debouncedLoadFiles])
+  }, [loadFiles, debouncedLoadFiles, user])
 
   const handleView = async (fileId: string) => {
     router.push(`/cheatsheets/${fileId}`)
   }
 
-  const handleShare = async (fileId: string, userId: string) => {
-    try {
-      await shareFile(fileId, userId)
-      window.dispatchEvent(new Event("filesChanged"))
-      await loadFiles()
-    } catch (error) {
-      console.error("Error sharing file:", error)
-    }
-  }
+  // const handleShare = async (fileId: string, userId: string) => {
+  //   try {
+  //     await shareFile(fileId, userId)
+  //     window.dispatchEvent(new CustomEvent("filesChanged", { detail: { action: "shared", files: [fileId] } }))
+  //     await loadFiles()
+  //   } catch (error) {
+  //     console.error("Error sharing file:", error)
+  //   }
+  // }
 
-  const handleUnshare = async (fileId: string, userId: string) => {
-    try {
-      await unshareFile(fileId, userId)
-      window.dispatchEvent(new Event("filesChanged"))
-      await loadFiles()
-    } catch (error) {
-      console.error("Error unsharing file:", error)
-    }
-  }
+  // const handleUnshare = async (fileId: string, userId: string) => {
+  //   try {
+  //     await unshareFile(fileId, userId)
+  //     window.dispatchEvent(new CustomEvent("filesChanged", { detail: { action: "unshared", files: [fileId] } }))
+  //     await loadFiles()
+  //   } catch (error) {
+  //     console.error("Error unsharing file:", error)
+  //   }
+  // }
 
   const handleDeleteClick = (fileId: string, fileKey: string) => {
     const file = files.find((f) => f.id === fileId)
@@ -182,6 +237,9 @@ export default function DashboardPage() {
       const fileType = fileToDelete.key.startsWith("slides/") ? "slides" : "cheatsheets"
       const filename = fileToDelete.key.split("/").pop() || fileToDelete.key
 
+      // Mark key as deleted (with timestamp) so background reconciles don't re-add it
+      deletedKeysRef.current.set(fileToDelete.key, Date.now())
+
       await removeFile(fileType, filename)
 
       toast({
@@ -189,7 +247,8 @@ export default function DashboardPage() {
         description: "File deleted successfully",
       })
 
-      window.dispatchEvent(new Event("filesChanged"))
+      // Notify listeners with details so they can update immediately
+      window.dispatchEvent(new CustomEvent("filesChanged", { detail: { action: "deleted", files: [fileToDelete.key] } }))
       loadFiles()
     } catch (error) {
       console.error("Error deleting file:", error)
@@ -216,50 +275,93 @@ export default function DashboardPage() {
   }
 
   const handleGenerateCheatsheets = async () => {
-    if (selectedSlides.size === 0) {
-      toast({
-        title: "No slides selected",
-        description: "Please select at least one slide to generate cheatsheets",
-        variant: "destructive",
+  if (selectedSlides.size === 0) {
+    toast({
+      title: "No slides selected",
+      description: "Please select at least one slide to generate cheatsheets",
+      variant: "destructive",
+    })
+    return
+  }
+
+  setIsGenerating(true)
+  setShowGenerateModal(true)
+
+  try {
+    const slidesArray = Array.from(selectedSlides)
+
+    const newFile = await generateCheatsheet(slidesArray)
+
+    setFiles(prev => [
+      {
+        id: newFile.file_id,
+        key: newFile.key,
+        name: `Cheatsheet ${Date.now()}`,
+        userId: user?.id || "",
+        createdAt: new Date().toISOString(),
+      },
+      ...prev,
+    ])
+
+    toast({
+      title: "Success",
+      description: `Generated 1 cheatsheet from ${slidesArray.length} slide${slidesArray.length > 1 ? "s" : ""}.`,
+    })
+
+    setSelectedSlides(new Set())
+
+    setTimeout(() => loadFiles(), 300)
+
+  } catch (error) {
+    console.error(error)
+    toast({
+      title: "Generation Failed",
+      description: "Failed to generate cheatsheets. Please try again.",
+      variant: "destructive",
+    })
+  } finally {
+    setIsGenerating(false)
+    setTimeout(() => setShowGenerateModal(false), 1000)
+  }
+}
+
+
+  // receive uploaded files from UploadModal; add optimistic placeholders and refresh
+  const handleUploadComplete = (uploaded?: { key: string; name: string }[]) => {
+    if (uploaded && uploaded.length > 0) {
+      setFiles((prev) => {
+        const placeholders = uploaded.map((f) => ({
+          id: `upload-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+          name: f.name,
+          key: f.key,
+          userId: user?.id || "",
+          createdAt: new Date().toISOString(),
+        })) as File[]
+        return [...placeholders, ...prev]
       })
+
+      // reconcile with server data in background
+      debouncedLoadFiles()
       return
     }
 
-    setIsGenerating(true)
-    setShowGenerateModal(true)
-    setGenerateProgress(0)
-
-    try {
-      const slidesArray = Array.from(selectedSlides)
-      await generateCheatsheet(slidesArray)
-
-      setGenerateProgress(100)
-      toast({
-        title: "Success",
-        description: `Generated 1 cheatsheet from ${slidesArray.length} slide${slidesArray.length > 1 ? "s" : ""}.`,
-      })
-
-      setSelectedSlides(new Set())
-      window.dispatchEvent(new Event("filesChanged"))
-      loadFiles()
-    } catch (error) {
-      console.error(error)
-      toast({
-        title: "Generation Failed",
-        description: "Failed to generate cheatsheets. Please try again.",
-        variant: "destructive",
-      })
-    } finally {
-      setIsGenerating(false)
-      setTimeout(() => setShowGenerateModal(false), 1000)
-    }
+    // fallback: just refresh
+    loadFiles()
   }
 
-  const handleUploadComplete = () => {
-    setTimeout(() => {
-      console.log("  Dashboard: handleUploadComplete called")
-      loadFiles()
-    }, 500)
+  const handleRefresh = async () => {
+    setIsRefreshing(true)
+    try {
+      await loadFiles()
+      toast({
+        title: "Refreshed",
+        description: "Files list has been updated",
+      })
+    } catch (error) {
+      console.error("Error refreshing files:", error)
+    } finally {
+      setIsRefreshing(false)
+    }
   }
 
   const slides = files.filter((f) => f.key.startsWith("slides/"))
@@ -325,6 +427,16 @@ export default function DashboardPage() {
               <Button
                 variant="ghost"
                 size="sm"
+                onClick={handleRefresh}
+                disabled={isRefreshing}
+                className="h-9 w-9 p-0"
+                title="Refresh files"
+              >
+                <RefreshCw className={cn("h-4 w-4", isRefreshing && "animate-spin")} />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={() => {
                   setShowSearch(!showSearch)
                   if (showSearch) {
@@ -379,7 +491,7 @@ export default function DashboardPage() {
 
           {searchQuery && (
             <div className="mb-4 text-sm text-muted-foreground">
-              Found {filteredFiles.length} result{filteredFiles.length !== 1 ? "s" : ""} for "{searchQuery}"
+              Found {filteredFiles.length} result{filteredFiles.length !== 1 ? "s" : ""} for &quot;{searchQuery}&quot;
             </div>
           )}
 
@@ -405,7 +517,7 @@ export default function DashboardPage() {
               </h3>
               <p className="text-sm sm:text-base text-muted-foreground mb-6 max-w-sm">
                 {searchQuery
-                  ? `No files match "${searchQuery}". Try a different search term.`
+                  ? `No files match &quot;${searchQuery}&quot;. Try a different search term.`
                   : activeTab === "cheatsheets"
                     ? "Generate cheatsheets by selecting slides and clicking the generate button"
                     : "Upload a slide PDF to get started"}
@@ -595,7 +707,7 @@ export default function DashboardPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete {deleteFileType}?</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete "{deleteFile?.name}"? This action cannot be undone.
+              Are you sure you want to delete &quot;{deleteFile?.name}&quot;? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="flex-col sm:flex-row gap-2">

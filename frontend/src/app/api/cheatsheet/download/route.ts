@@ -10,7 +10,6 @@ export async function GET(req: Request) {
   }
 
   try {
-    // Step 1: ขอ presigned URL จาก backend
     const res = await client.GET("/api/cheatsheet/presigned", {
       params: { query: { key } },
     })
@@ -21,7 +20,6 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "Failed to get presigned URL", details: res.error }, { status: 500 })
     }
 
-    // Step 2: ดึงไฟล์จาก S3
     const s3Response = await fetch(res.data.url)
 
     if (!s3Response.ok) {
@@ -29,7 +27,6 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "Failed to fetch from S3" }, { status: 500 })
     }
 
-    // Step 3: ส่ง blob กลับ
     const arrayBuffer = await s3Response.arrayBuffer()
     const contentType = s3Response.headers.get("Content-Type") || "application/octet-stream"
 
@@ -39,8 +36,9 @@ export async function GET(req: Request) {
         "Content-Disposition": `attachment; filename="${key.split("/").pop()}"`,
       },
     })
-  } catch (err: any) {
-    console.error("Download error:", err)
-    return NextResponse.json({ error: "Download failed", message: err.message }, { status: 500 })
+  } catch (err) {
+    const error = err as Error
+    console.error("Download error:", error)
+    return NextResponse.json({ error: "Download failed", message: error.message }, { status: 500 })
   }
 }
