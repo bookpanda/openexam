@@ -3,14 +3,17 @@
 import { useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { client } from "@/api/client"
+import { userService } from "@/lib/services/user-service"
 
 export default function OAuthCallback() {
   const router = useRouter()
   const searchParams = useSearchParams()
+  
+  const code = searchParams.get("code")
+  const state = searchParams.get("state")
 
   useEffect(() => {
-    const code = searchParams.get("code")
-    const state = searchParams.get("state")
+    
 
     const handleLogin = async () => {
       if (code && state) {
@@ -19,18 +22,28 @@ export default function OAuthCallback() {
             body: { code, state },
           })
           console.log("Login response:", response)
-          localStorage.setItem("accessToken", response.data?.token || "")
+
+          const userData = response.data
+          if (userData) {
+            localStorage.setItem("accessToken", userData.token || "")
+
+            userService.saveUserProfile({
+              id: userData.id,
+              email: userData.email,
+              name: userData.name,
+            })
+          }
 
           router.replace("/")
         } catch (err) {
           console.error("Login failed", err)
-          router.replace("/")
+          router.replace("/signin")
         }
       }
     }
 
     handleLogin()
-  }, [searchParams, router])
-
+  }, [code, state, router])
+  
   return <div>Logging in...</div>
 }
