@@ -106,6 +106,34 @@ func (r *DynamoDBRepository) GetFile(ctx context.Context, id string) (domain.Fil
 	return file, nil
 }
 
+func (r *DynamoDBRepository) GetSharesOfFile(ctx context.Context, fileId, key string) ([]domain.Share, error) {
+	// Query GSI by fileId to get all shares for this file
+	out, err := r.client.Query(ctx, &dynamodb.QueryInput{
+		TableName:              &r.sharesTable,
+		IndexName:              aws.String("FileIdIndex"),
+		KeyConditionExpression: aws.String("fileId = :fid"),
+		ExpressionAttributeValues: map[string]types.AttributeValue{
+			":fid": &types.AttributeValueMemberS{Value: fileId},
+		},
+	})
+	if err != nil {
+		return []domain.Share{}, err
+	}
+	if len(out.Items) == 0 {
+		return []domain.Share{}, nil // Return empty array if no shares found
+	}
+
+	var shares []domain.Share
+	for _, item := range out.Items {
+		var share domain.Share
+		if err := attributevalue.UnmarshalMap(item, &share); err != nil {
+			continue // Skip invalid items
+		}
+		shares = append(shares, share)
+	}
+	return shares, nil
+}
+
 func (r *DynamoDBRepository) ShareFile(ctx context.Context, userId, key, fileId string) error {
 	_, err := r.client.PutItem(ctx, &dynamodb.PutItemInput{
 		TableName: &r.sharesTable,
