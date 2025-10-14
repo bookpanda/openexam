@@ -39,6 +39,18 @@ pub struct FilesData {
     pub files: Vec<File>,
 }
 
+#[allow(non_snake_case)]
+#[derive(Debug, Deserialize)]
+pub struct Share {
+    pub UserID: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct FileData {
+    pub file: File,
+    pub shares: Vec<Share>,
+}
+
 #[derive(Debug, Deserialize)]
 pub struct ShareData {
     pub shared: bool,

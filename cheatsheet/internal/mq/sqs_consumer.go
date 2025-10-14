@@ -3,6 +3,7 @@ package mq
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log"
 	"time"
 
@@ -56,6 +57,7 @@ func (c *SQSConsumer) pollMessages(ctx context.Context) {
 		MaxNumberOfMessages: 10,
 		WaitTimeSeconds:     20, // Long polling
 		VisibilityTimeout:   30,
+		AttributeNames:      []types.QueueAttributeName{"ApproximateReceiveCount"},
 	})
 
 	if err != nil {
@@ -95,11 +97,33 @@ func (c *SQSConsumer) processMessage(ctx context.Context, message types.Message)
 
 	if err := c.tracker.Complete(response.RequestID, result); err != nil {
 		log.Printf("Error completing request %s: %v", response.RequestID, err)
-		// Don't delete message if we couldn't complete - it will retry
+
+		// Check receive count to avoid infinite retries
+		receiveCount := c.getReceiveCount(message)
+		if receiveCount > 3 {
+			log.Printf("Message received %d times, deleting to prevent infinite loop", receiveCount)
+			c.deleteMessage(ctx, message.ReceiptHandle)
+		}
+		// Otherwise don't delete - it will retry
 		return
 	}
 
 	c.deleteMessage(ctx, message.ReceiptHandle)
+}
+
+func (c *SQSConsumer) getReceiveCount(message types.Message) int {
+	if message.Attributes == nil {
+		return 1
+	}
+
+	if countStr, ok := message.Attributes["ApproximateReceiveCount"]; ok {
+		var count int
+		if _, err := fmt.Sscanf(countStr, "%d", &count); err == nil {
+			return count
+		}
+	}
+
+	return 1
 }
 
 func (c *SQSConsumer) deleteMessage(ctx context.Context, receiptHandle *string) {

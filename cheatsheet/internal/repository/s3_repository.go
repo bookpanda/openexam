@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"io"
+	"log"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
@@ -47,7 +48,7 @@ func (r *S3Repository) Delete(ctx context.Context, key string) error {
 		Key:    &key,
 	})
 	if err != nil {
-		// log.Println("s3 delete error:", err)
+		log.Println("s3 delete error:", err)
 		return domain.ErrStorageFailed
 	}
 	return nil
