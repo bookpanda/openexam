@@ -4,22 +4,28 @@ import { paths } from "./schema"
 
 const middleware: Middleware = {
   async onRequest({ request }) {
-    const accessToken = localStorage.getItem("accessToken")
-    if (accessToken) {
-      request.headers.set("Authorization", `Bearer ${accessToken}`)
+    if (typeof window !== "undefined") {
+      const accessToken = localStorage.getItem("accessToken")
+      if (accessToken) {
+        request.headers.set("Authorization", `Bearer ${accessToken}`)
+      }
     }
     return request
   },
-  async onResponse({ response }) {
-    // if (response.status === 401) {
-    // }
 
+  async onResponse({ response }) {
+    if (response.status === 401 && typeof window !== "undefined") {
+      console.warn("Access token expired or invalid, redirecting to signin...")
+      localStorage.removeItem("accessToken")
+      localStorage.removeItem("user_profile")
+      window.location.href = "/signin"
+    }
     return response
   },
 }
 
 const client = createClient<paths>({
-  baseUrl: process.env.BACKEND_URL || "http://localhost:3001",
+  baseUrl: process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3001",
   fetch: (url, init = {}) => {
     return fetch(url, {
       ...init,

@@ -61,8 +61,21 @@ pub struct File {
 }
 
 #[derive(Deserialize, Serialize, ToSchema)]
+pub struct Share {
+    #[serde(rename = "userId")]
+    pub user_id: String,
+    pub name: String,
+}
+
+#[derive(Deserialize, Serialize, ToSchema)]
 pub struct GetAllFilesResponse {
     pub files: Vec<File>,
+}
+
+#[derive(Deserialize, Serialize, ToSchema)]
+pub struct GetFileResponse {
+    pub file: File,
+    pub shares: Vec<Share>,
 }
 
 #[derive(Deserialize, Serialize, ToSchema)]

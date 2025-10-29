@@ -14,6 +14,10 @@ func NewShareService(metaRepo domain.MetadataRepository) *ShareServiceImpl {
 	return &ShareServiceImpl{metaRepo: metaRepo}
 }
 
+func (s *ShareServiceImpl) GetSharesOfFile(ctx context.Context, fileId, key string) ([]domain.Share, error) {
+	return s.metaRepo.GetSharesOfFile(ctx, fileId, key)
+}
+
 func (s *ShareServiceImpl) Share(ctx context.Context, userId, key, fileId string) error {
 	return s.metaRepo.ShareFile(ctx, userId, key, fileId)
 }

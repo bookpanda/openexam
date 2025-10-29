@@ -11,10 +11,29 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /** @description Get all files that are shared with the current user, including files they own. */
         get: operations["get_all_files"];
         put?: never;
         post?: never;
+        /** @description Delete a file from S3 and remove all associated shares from DynamoDB. */
         delete: operations["remove"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cheatsheet/files/:file_id": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Get a file by its ID. */
+        get: operations["get_file"];
+        put?: never;
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -29,6 +48,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
+        /** @description Generate a combined PDF from multiple files you have access to. Sends a request to SQS and waits for the Lambda to process and merge the PDFs. Returns the key of the generated file. */
         post: operations["generate"];
         delete?: never;
         options?: never;
@@ -43,6 +63,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /** @description Generate a presigned URL for downloading a file from S3. The URL expires after a set time. */
         get: operations["get_presigned_get_url"];
         put?: never;
         post?: never;
@@ -59,6 +80,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /** @description Generate a presigned URL for uploading a file to S3. The URL expires after a set time. */
         get: operations["get_presigned_upload_url"];
         put?: never;
         post?: never;
@@ -77,6 +99,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
+        /** @description Share your file with another user. Creates a share record in DynamoDB. Your user id is determined from the Auth header. */
         post: operations["share"];
         delete?: never;
         options?: never;
@@ -93,7 +116,24 @@ export interface paths {
         };
         get?: never;
         put?: never;
+        /** @description Revoke a user's access to a file. Removes the share record from DynamoDB. Your user id is determined from the Auth header. */
         post: operations["unshare"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/user/all": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_all_users"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -171,6 +211,13 @@ export interface components {
         GetAllFilesResponse: {
             files: components["schemas"]["File"][];
         };
+        GetAllUsersResponse: {
+            users: components["schemas"]["UserProfile"][];
+        };
+        GetFileResponse: {
+            file: components["schemas"]["File"];
+            shares: components["schemas"]["Share"][];
+        };
         GetPresignedGetUrlResponse: {
             expires_in: string;
             url: string;
@@ -193,6 +240,10 @@ export interface components {
             file: string;
             file_type: components["schemas"]["FileType"];
         };
+        Share: {
+            name: string;
+            userId: string;
+        };
         ShareRequest: {
             file_id: string;
             user_id: string;
@@ -206,6 +257,10 @@ export interface components {
         };
         UnshareResponse: {
             unshared: boolean;
+        };
+        UserProfile: {
+            id: string;
+            name: string;
         };
         ValidateTokenRequest: {
             token: string;
@@ -254,9 +309,9 @@ export interface operations {
     remove: {
         parameters: {
             query: {
-                /** @description File type (slide or cheatsheet) */
+                /** @description File type (`slides` or `cheatsheets`) */
                 file_type: string;
-                /** @description Filename to delete */
+                /** @description Filename to delete e.g. 82a354_test.pdf */
                 file: string;
             };
             header?: never;
@@ -278,6 +333,33 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    get_file: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description File */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GetFileResponse"];
+                };
             };
             /** @description Internal server error */
             500: {
@@ -329,7 +411,7 @@ export interface operations {
     get_presigned_get_url: {
         parameters: {
             query: {
-                /** @description Full key in S3 */
+                /** @description Full key in S3 e.g. slides/1/4e8d92_test.pdf */
                 key: string;
             };
             header?: never;
@@ -366,7 +448,7 @@ export interface operations {
     get_presigned_upload_url: {
         parameters: {
             query: {
-                /** @description Filename for the upload */
+                /** @description Filename for the upload e.g. slide1.pdf */
                 filename: string;
             };
             header?: never;
@@ -451,6 +533,33 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["UnshareResponse"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    get_all_users: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GetAllUsersResponse"];
                 };
             };
             /** @description Internal server error */
