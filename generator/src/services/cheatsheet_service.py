@@ -1,9 +1,11 @@
+import json
+import os
+
+from dotenv import load_dotenv
+from fpdf import FPDF
 from google import genai
 from google.genai import types
-import json
-from fpdf import FPDF
-from dotenv import load_dotenv
-import os
+from pydantic import BaseModel
 
 load_dotenv()
 gemini_api_key = os.getenv("GEMINI_API_KEY")
@@ -15,17 +17,20 @@ class Chapter:
         self.body = body
 
 
-class Summary:
-    def __init__(self, header: str, chapters: list[Chapter]):
-        self.header = header
-        self.chapters = chapters
+class Summary(BaseModel):
+    header: str
+    chapters: list[Chapter]
 
 
 def generate_summary(pdf_files):
-    
-    contents = [types.Part.from_bytes(data=file, mime_type='application/pdf',
-      ) for file in pdf_files]
-    prompt =    "You are given multiple documents to summarize for exam preparation. \
+    contents = [
+        types.Part.from_bytes(
+            data=file,
+            mime_type="application/pdf",
+        )
+        for file in pdf_files
+    ]
+    prompt = "You are given multiple documents to summarize for exam preparation. \
                 For each document, produce a concise summary that fits within two A4 pages, with each page split into two equal-width columns. \
                 Include only the most important concepts, facts, definitions, processes, or arguments likely to be tested. \
                 Omit introductions, filler, background, or overly detailed explanations. \
@@ -33,11 +38,10 @@ def generate_summary(pdf_files):
                 Each summary must include a header, which should be the title of the corresponding PDF document."
     contents += [prompt]
 
-
     response = client.models.generate_content(
-    model="gemini-2.5-flash-lite",
-    contents=contents,
-    config={
+        model="gemini-2.5-flash-lite",
+        contents=contents,
+        config={
             "response_mime_type": "application/json",
             "response_schema": list[Summary],
         },
@@ -47,8 +51,9 @@ def generate_summary(pdf_files):
 
     # Parse string to Python list[dict]
     parsed_data = json.loads(json_str)
-    
+
     return parsed_data
+
 
 class TwoColumnPDF(FPDF):
     def __init__(self):
@@ -62,7 +67,7 @@ class TwoColumnPDF(FPDF):
         self.page_height = self.h - 2 * self.margin
         self.col_width = (self.w - 2 * self.margin) / 2
 
-        self.column = 'left'
+        self.column = "left"
         self.y_pos = self.margin
 
     def check_switch_column(self, extra_height=0):
@@ -92,7 +97,7 @@ class TwoColumnPDF(FPDF):
             self.set_font("Arial", 'B', 12)
             self.set_text_color(255, 255, 255)
         else:
-            self.set_font("Arial", '', 9)
+            self.set_font("Arial", "", 9)
             self.set_text_color(0, 0, 0)
 
         self.switch_column_if_needed(self.line_height)
@@ -155,15 +160,16 @@ class TwoColumnPDF(FPDF):
 def write_in_pdf(parsed_data):
     pdf = TwoColumnPDF()
     for summary in parsed_data:
-        pdf.add_line(summary['header'], size=0)
+        pdf.add_line(summary["header"], size=0)
         pdf.add_spacing(0.5)
 
         for chapter in summary['chapters']:
             pdf.add_chapter_box(chapter['title'], chapter['body'])
             pdf.add_spacing(0.5)
 
-    pdf_byte_string = pdf.output(dest='S').encode('latin-1')
+    pdf_byte_string = pdf.output(dest="S").encode("latin-1")
     return pdf_byte_string
+
 
 def generate_cheatsheet(pdf_files):
     summary = generate_summary(pdf_files)
