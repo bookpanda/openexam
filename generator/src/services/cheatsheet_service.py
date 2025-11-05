@@ -74,29 +74,6 @@ class TwoColumnPDF(FPDF):
         """Check if we need to switch column"""
         if self.y_pos + extra_height > self.h - self.margin:
             return True
-<<<<<<< HEAD
-        
-    def switch_column_if_needed(self, extra_height=0):
-        """Switch column or add page if overflow"""
-        if self.check_switch_column(extra_height):
-            if self.column == 'left':
-                self.column = 'right'
-                self.y_pos = self.margin
-            else:
-                self.add_page()
-                self.column = 'left'
-                self.y_pos = self.margin
-
-    
-
-    def add_line(self, text, size=2):
-        # Set font style
-        if size == 0:
-            self.set_font("Arial", 'B', 15)
-            self.set_text_color(255, 0, 0)
-        elif size == 1:
-            self.set_font("Arial", 'B', 12)
-=======
 
     def switch_column_if_needed(self, extra_height=0):
         """Switch column or add page if overflow"""
@@ -116,7 +93,6 @@ class TwoColumnPDF(FPDF):
             self.set_text_color(255, 0, 0)
         elif size == 1:
             self.set_font("Arial", "B", 12)
->>>>>>> 7d56c36166ca5a5d1f8b6d42ec1b9f929a712881
             self.set_text_color(255, 255, 255)
         else:
             self.set_font("Arial", "", 9)
@@ -124,11 +100,6 @@ class TwoColumnPDF(FPDF):
 
         self.switch_column_if_needed(self.line_height)
 
-<<<<<<< HEAD
-        x_pos = self.margin if self.column == 'left' else self.margin*3/2 + self.col_width
-        self.set_xy(x_pos, self.y_pos)
-        self.multi_cell(self.col_width-self.margin/2, self.line_height, text, border=0, align='L')
-=======
         x_pos = (
             self.margin
             if self.column == "left"
@@ -142,7 +113,6 @@ class TwoColumnPDF(FPDF):
             border=0,
             align="L",
         )
->>>>>>> 7d56c36166ca5a5d1f8b6d42ec1b9f929a712881
         self.y_pos = self.get_y()
 
     def add_spacing(self, lines=1):
