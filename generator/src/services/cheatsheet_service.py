@@ -11,10 +11,10 @@ load_dotenv()
 gemini_api_key = os.getenv("GEMINI_API_KEY")
 client = genai.Client(api_key=gemini_api_key)
 
-
-class Chapter(BaseModel):
-    title: str
-    body: list[str]
+class Chapter:
+    def __init__(self, title: str, body: list[str]):
+        self.title = title
+        self.body = body
 
 
 class Summary(BaseModel):
