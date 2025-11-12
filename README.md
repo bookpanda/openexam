@@ -61,7 +61,15 @@ When run locally, the gateway url will be available at `localhost:3001`.
 - Swagger UI: `http://127.0.0.1:3001/swagger/`
 
 ## Load Test
+```bash
+docker-compose up
 
-- docker run --rm -i -v "$(pwd)/loadtest:/scripts" -w /scripts grafana/k6:0.50.0 run upload_presign.js
-- docker run --rm -i -v "$(pwd)/loadtest:/scripts" -w /scripts grafana/k6:0.50.0 run get_all_files.js
+# upload presign
+docker run --rm -i -v "$(pwd)/loadtest:/scripts" -w /scripts grafana/k6:0.50.0 run upload_presign.js
+
+# get all files
+docker run --rm -i -v "$(pwd)/loadtest:/scripts" -w /scripts grafana/k6:0.50.0 run get_all_files.js
+
+# generate
 - docker run --rm -i -v "$(pwd)/loadtest:/scripts" -w /scripts grafana/k6:0.50.0 run generate.js
+```
