@@ -71,5 +71,5 @@ docker run --rm -i -v "$(pwd)/loadtest:/scripts" -w /scripts grafana/k6:0.50.0 r
 docker run --rm -i -v "$(pwd)/loadtest:/scripts" -w /scripts grafana/k6:0.50.0 run get_all_files.js
 
 # generate
-- docker run --rm -i -v "$(pwd)/loadtest:/scripts" -w /scripts grafana/k6:0.50.0 run generate.js
+docker run --rm -i -v "$(pwd)/loadtest:/scripts" -w /scripts grafana/k6:0.50.0 run generate.js
 ```
