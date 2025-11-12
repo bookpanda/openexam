@@ -7,7 +7,6 @@ export let options = {
 };
 
 const API_URL = "http://host.docker.internal:3001";
-// const API_URL = "https://openexam-api.bookpanda.dev";
 const TOKEN = "PASTE_YOUR_JWT_TOKEN_HERE"; // get one from real login
 
 const HEADERS = { Authorization: `Bearer ${TOKEN}` };
