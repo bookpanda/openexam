@@ -2,6 +2,7 @@ package config
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"os"
 	"strconv"
@@ -31,6 +32,7 @@ type SQSConfig struct {
 }
 
 func Load() AppConfig {
+	env := getEnv("ENV", "dev")
 	port := getEnv("PORT", "3000")
 	region := getEnv("AWS_REGION", "ap-southeast-1")
 	bucket := mustEnv("S3_BUCKET")
@@ -51,12 +53,12 @@ func Load() AppConfig {
 		MaxUploadMB: maxMB,
 		AwsCfg:      awsCfg,
 		DynamoDB: DynamoDBConfig{
-			FilesTable:  getEnv("FILES_TABLE", "openexam-files"),
-			SharesTable: getEnv("SHARES_TABLE", "openexam-shares"),
+			FilesTable:  getEnv("FILES_TABLE", fmt.Sprintf("openexam-%s-files", env)),
+			SharesTable: getEnv("SHARES_TABLE", fmt.Sprintf("openexam-%s-shares", env)),
 		},
 		SQS: SQSConfig{
-			RequestQueueURL:  getEnv("SQS_REQUEST_QUEUE_URL", "openexam-queue"),
-			ResponseQueueURL: getEnv("SQS_RESPONSE_QUEUE_URL", "openexam-queue-responses"),
+			RequestQueueURL:  getEnv("SQS_REQUEST_QUEUE_URL", fmt.Sprintf("openexam-%s-queue", env)),
+			ResponseQueueURL: getEnv("SQS_RESPONSE_QUEUE_URL", fmt.Sprintf("openexam-%s-queue-responses", env)),
 		},
 	}
 }
