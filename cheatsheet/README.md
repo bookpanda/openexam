@@ -1,4 +1,4 @@
-# chearsheet
+# cheatsheet
 ```bash
 make run
 

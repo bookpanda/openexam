@@ -1,5 +1,5 @@
 resource "aws_iam_policy" "sqs_policy" {
-  name        = "SQSPermissions"
+  name        = "${var.app_name}-SQSPermissions"
   description = "Permissions to use SQS queues for cheatsheet generation"
   policy = jsonencode({
     Version = "2012-10-17"
@@ -28,14 +28,14 @@ resource "aws_iam_policy" "sqs_policy" {
 }
 
 resource "aws_iam_policy_attachment" "sqs_policy_attachment" {
-  name       = "sqs-policy-attachment"
+  name       = "${var.app_name}-sqs-policy-attachment"
   policy_arn = aws_iam_policy.sqs_policy.arn
   users      = [aws_iam_user.user.name]
   depends_on = [aws_iam_user.user]
 }
 
 resource "aws_iam_policy" "dynamodb_policy" {
-  name        = "DynamoDBPermissions"
+  name        = "${var.app_name}-DynamoDBPermissions"
   description = "Permissions to access DynamoDB tables for file and share management"
   policy = jsonencode({
     Version = "2012-10-17"
@@ -63,7 +63,7 @@ resource "aws_iam_policy" "dynamodb_policy" {
 }
 
 resource "aws_iam_policy_attachment" "dynamodb_policy_attachment" {
-  name       = "dynamodb-policy-attachment"
+  name       = "${var.app_name}-dynamodb-policy-attachment"
   policy_arn = aws_iam_policy.dynamodb_policy.arn
   users      = [aws_iam_user.user.name]
   depends_on = [aws_iam_user.user]
