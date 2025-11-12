@@ -60,26 +60,35 @@ func (r *DynamoDBRepository) GetAllFiles(ctx context.Context, userId string) ([]
 		return []domain.File{}, nil
 	}
 
-	// Step 3: Batch get all files in a single request (up to 100 items)
-	batchOut, err := r.client.BatchGetItem(ctx, &dynamodb.BatchGetItemInput{
-		RequestItems: map[string]types.KeysAndAttributes{
-			r.filesTable: {
-				Keys: keysToFetch,
-			},
-		},
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	// Step 4: Unmarshal all files
+	// Step 3: Batch get all files in chunks of 100 (DynamoDB limit)
+	const batchSize = 100
 	var files []domain.File
-	for _, item := range batchOut.Responses[r.filesTable] {
-		var file domain.File
-		if err := attributevalue.UnmarshalMap(item, &file); err != nil {
-			continue // Skip if unmarshal fails
+
+	for i := 0; i < len(keysToFetch); i += batchSize {
+		end := i + batchSize
+		if end > len(keysToFetch) {
+			end = len(keysToFetch)
 		}
-		files = append(files, file)
+
+		batchOut, err := r.client.BatchGetItem(ctx, &dynamodb.BatchGetItemInput{
+			RequestItems: map[string]types.KeysAndAttributes{
+				r.filesTable: {
+					Keys: keysToFetch[i:end],
+				},
+			},
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		// Step 4: Unmarshal files from this batch
+		for _, item := range batchOut.Responses[r.filesTable] {
+			var file domain.File
+			if err := attributevalue.UnmarshalMap(item, &file); err != nil {
+				continue // Skip if unmarshal fails
+			}
+			files = append(files, file)
+		}
 	}
 
 	return files, nil
