@@ -9,7 +9,8 @@ export let options = {
   ],
 };
 
-const BASE_URL = "https://openexam-api.bookpanda.dev/api/cheatsheet/generate";
+// const BASE_URL = "https://openexam-api.bookpanda.dev/api/cheatsheet/generate";
+const BASE_URL = "http://host.docker.internal:3001/api/cheatsheet/generate";
 const TOKEN = "YOUR_JWT_TOKEN_HERE"; // same JWT from Google login
 
 export default function () {
