@@ -2,11 +2,12 @@ import http from "k6/http";
 import { check, sleep } from "k6";
 
 export let options = {
-  vus: 5, // 5 virtual users
+  vus: 3, // 3 virtual users
   duration: "30s", // total test time
 };
 
-const API_URL = "http://host.docker.internal:3001";
+// const API_URL = "http://host.docker.internal:3001";
+const API_URL = "https://openexam-api.bookpanda.dev";
 const TOKEN = "PASTE_YOUR_JWT_TOKEN_HERE"; // get one from real login
 
 const HEADERS = { Authorization: `Bearer ${TOKEN}` };
