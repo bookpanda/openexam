@@ -9,16 +9,14 @@ export let options = {
   ],
 };
 
-const BASE_URL = "https://openexam-api.bookpanda.dev/api/cheatsheet/generate";
+// const BASE_URL = "https://openexam-api.bookpanda.dev/api/cheatsheet/generate";
+const BASE_URL = "http://host.docker.internal:3001/api/cheatsheet/generate";
 const TOKEN = "YOUR_JWT_TOKEN_HERE"; // same JWT from Google login
 
 export default function () {
   const payload = JSON.stringify({
-    file_ids: ["586027e5-e866-4d77-a77d-bd23dbe6269e"],
+    file_ids: ["real id here"],
   });
-  //   const payload = JSON.stringify({
-  //     file_ids: ["real id here"],
-  //   });
   const headers = {
     Authorization: `Bearer ${TOKEN}`,
     "Content-Type": "application/json",
