@@ -3,22 +3,20 @@ import { check, sleep } from "k6";
 
 export let options = {
   stages: [
-    { duration: "1m", target: 10 }, // ramp up to 10 users over 1 minute
-    { duration: "8m", target: 10 }, // hold steady for 8 minutes
-    { duration: "1m", target: 0 }, // ramp down to 0 users
+    { duration: "20s", target: 3 }, // ramp up to 3 users over 20 seconds
+    { duration: "20s", target: 3 }, // hold steady for 20 seconds
+    { duration: "20s", target: 0 }, // ramp down to 0 users
   ],
 };
 
+// const BASE_URL = "http://host.docker.internal:3001/api/cheatsheet/generate";
 const BASE_URL = "https://openexam-api.bookpanda.dev/api/cheatsheet/generate";
 const TOKEN = "YOUR_JWT_TOKEN_HERE"; // same JWT from Google login
 
 export default function () {
   const payload = JSON.stringify({
-    file_ids: ["586027e5-e866-4d77-a77d-bd23dbe6269e"],
+    file_ids: ["e9fca726-e03b-4e12-b39b-06323ba72b97"],
   });
-  //   const payload = JSON.stringify({
-  //     file_ids: ["real id here"],
-  //   });
   const headers = {
     Authorization: `Bearer ${TOKEN}`,
     "Content-Type": "application/json",
@@ -31,5 +29,5 @@ export default function () {
   });
 
   // simulate user waiting between generations (~30 seconds)
-  sleep(30);
+  sleep(5);
 }
